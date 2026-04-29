@@ -5,63 +5,69 @@ import io.squarescreen.core.config.ForegroundNotificationConfig
 import io.squarescreen.core.config.SquareScreenConfig
 import io.squarescreen.core.logging.SquareScreenDebugLogger
 import io.squarescreen.player.SquareScreen
+import io.squarescreen.sample.data.CredentialStore
+import io.squarescreen.sample.data.DeviceCredentials
 
 /**
- * Application entry point. SDK initialization happens here, in onCreate(), before any
- * Activity or Service starts. This is the only correct place to call SquareScreen.init().
+ * Application entry point.
+ *
+ * SDK initialization is conditional — it only happens if this device has already
+ * been paired (i.e. credentials are saved in EncryptedSharedPreferences).
+ *
+ * First launch: credentials are absent → SDK is NOT initialized here.
+ *   The user sees the PairingScreen in MainActivity, which handles registration
+ *   and calls initializeSdk() once credentials are obtained.
+ *
+ * Subsequent launches: credentials are present → SDK is initialized here, before
+ *   any Activity starts, so the player is ready immediately.
  */
 class SampleApplication : Application() {
 
+    lateinit var credentialStore: CredentialStore
+        private set
+
     override fun onCreate() {
         super.onCreate()
-        initializeSquareScreen()
+        credentialStore = CredentialStore(this)
+
+        // Initialize the SDK only if we already have credentials.
+        // If this is the first launch, MainActivity will call initializeSdk()
+        // after the device is successfully registered.
+        credentialStore.getCredentials()?.let { credentials ->
+            initializeSdk(credentials)
+        }
     }
 
-    private fun initializeSquareScreen() {
-        // --- Device credentials ---
-        //
-        // In a production app, NEVER hardcode the deviceToken here.
-        // The recommended flow is:
-        //   1. On first launch, call your backend with a device identifier
-        //      (e.g. Settings.Secure.ANDROID_ID or a generated UUID).
-        //   2. Your backend provisions the device and returns a token.
-        //   3. Store the token in EncryptedSharedPreferences.
-        //   4. Read it here at runtime.
-        //
-        // This sample uses hardcoded placeholder values for demonstration only.
-        val deviceId = "device-sample-uuid-0001"
-        val deviceToken = "sample-device-token-replace-me"
-
+    /**
+     * Initializes the SquareScreen SDK with the given device credentials.
+     *
+     * This is safe to call from any thread — SDK init is synchronized internally.
+     * Calling it more than once is a no-op (the SDK logs a warning and returns).
+     */
+    fun initializeSdk(credentials: DeviceCredentials) {
         SquareScreen.init(
             context = this,
             config = SquareScreenConfig(
-                // Replace with your SquareScreen API base URL.
                 baseUrl = "https://api.squarescreen.io",
-                deviceId = deviceId,
-                deviceToken = deviceToken,
+                deviceId = credentials.deviceId,
+                deviceToken = credentials.deviceToken,
 
-                // Heartbeat interval: how often the SDK reports device health metrics
-                // (CPU, memory, disk, temperature) to the server. Minimum 30s.
+                // Heartbeat: reports device health (CPU, memory, disk, temperature) every 60s.
                 heartbeatIntervalSeconds = 60L,
 
-                // Emergency poll interval: how often the SDK checks for active emergency
-                // broadcasts. Keep this low — a 30s delay on a fire alarm matters.
+                // Emergency poll: checks for active broadcasts every 30s.
+                // Keep this short — delays on a fire alarm broadcast matter.
                 emergencyPollIntervalSeconds = 30L,
 
-                // Cache TTL: how long a fetched playlist is considered fresh before
-                // the SDK re-fetches from the network. 1 hour is a sensible default
-                // for digital signage where content changes infrequently.
+                // Cache TTL: cached playlists are considered fresh for 1 hour.
                 cacheTtlSeconds = 3600L,
 
-                // The foreground service notification keeps this app alive as a display
-                // player. Android requires a visible notification for foreground services.
                 foregroundNotification = ForegroundNotificationConfig(
                     title = "SquareScreen Player",
                     iconResId = R.drawable.ic_player
                 ),
 
-                // Logger: only log in debug builds. Production builds are completely
-                // silent — the SDK never spams Logcat without an explicit logger.
+                // Only log in debug builds. Production is completely silent.
                 logger = if (BuildConfig.DEBUG) SquareScreenDebugLogger() else null
             )
         )
