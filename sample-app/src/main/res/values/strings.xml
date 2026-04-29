@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">SquareScreen Sample</string>
+    <string name="notification_channel_name">SquareScreen Player</string>
+    <string name="notification_channel_description">Keeps the SquareScreen display player running</string>
+    <string name="offline_badge">OFFLINE</string>
+    <string name="no_content_title">No content scheduled</string>
+    <string name="no_content_subtitle">Assign a playlist in the SquareScreen dashboard</string>
+    <string name="error_title">Unable to load content</string>
+    <string name="error_subtitle">Check network connectivity and device credentials</string>
 </resources>
