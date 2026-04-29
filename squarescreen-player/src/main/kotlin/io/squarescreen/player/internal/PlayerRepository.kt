@@ -4,6 +4,7 @@ import io.squarescreen.core.cache.CacheProvider
 import io.squarescreen.core.datasource.NetworkDataSource
 import io.squarescreen.core.model.DeviceStatus
 import io.squarescreen.core.model.EmergencyAlert
+import io.squarescreen.core.model.PlaybackReport
 import io.squarescreen.core.model.Playlist
 import io.squarescreen.core.result.SquareScreenResult
 
@@ -29,7 +30,6 @@ internal class PlayerRepository(
         quality: String? = null,
         limit: Int? = null
     ): SquareScreenResult<Playlist> {
-        // 1. Fresh cache hit
         val cached = cache.getPlaylist()
         if (cached != null) {
             SquareScreenServiceLocator.log(TAG, "Serving playlist from cache (${cached.items.size} items)")
@@ -38,7 +38,6 @@ internal class PlayerRepository(
             return SquareScreenResult.Success(cached)
         }
 
-        // 2. Fetch from network
         SquareScreenServiceLocator.deviceStatusState.value = DeviceStatus.SYNCING
         val result = network.fetchNowPlaying(type, category, quality, limit)
 
@@ -52,14 +51,12 @@ internal class PlayerRepository(
             }
             is SquareScreenResult.Error -> {
                 SquareScreenServiceLocator.logError(TAG, "Network fetch failed: ${result.error}")
-                // 3. Stale in-memory fallback
                 val fallback = lastKnownPlaylist
                 if (fallback != null) {
                     SquareScreenServiceLocator.log(TAG, "Serving stale in-memory playlist as offline fallback")
                     SquareScreenServiceLocator.deviceStatusState.value = DeviceStatus.OFFLINE
                     SquareScreenResult.Success(fallback)
                 } else {
-                    // 4. No fallback — propagate error
                     SquareScreenServiceLocator.deviceStatusState.value = DeviceStatus.OFFLINE
                     result
                 }
@@ -69,5 +66,17 @@ internal class PlayerRepository(
 
     suspend fun fetchEmergencyAlert(): SquareScreenResult<EmergencyAlert?> {
         return network.fetchEmergencyAlert()
+    }
+
+    suspend fun reportPlayback(report: PlaybackReport): SquareScreenResult<Unit> {
+        return network.reportPlayback(report)
+    }
+
+    suspend fun acknowledgeCommand(
+        commandId: String,
+        status: String,
+        result: Map<String, String>
+    ): SquareScreenResult<Unit> {
+        return network.acknowledgeCommand(commandId, status, result)
     }
 }

@@ -8,6 +8,10 @@ import java.util.concurrent.TimeUnit
 
 internal const val HEARTBEAT_WORK_TAG = "squarescreen_heartbeat"
 internal const val EMERGENCY_POLL_WORK_TAG = "squarescreen_emergency_poll"
+internal const val COMMAND_POLL_WORK_TAG = "squarescreen_command_poll"
+
+/** Default command poll interval in seconds. */
+private const val DEFAULT_COMMAND_POLL_INTERVAL_SECONDS = 30L
 
 internal class WorkScheduler(private val context: Context) {
 
@@ -43,8 +47,24 @@ internal class WorkScheduler(private val context: Context) {
         )
     }
 
+    fun scheduleCommandPoll(intervalSeconds: Long = DEFAULT_COMMAND_POLL_INTERVAL_SECONDS) {
+        val request = PeriodicWorkRequestBuilder<CommandPollWorker>(
+            repeatInterval = intervalSeconds,
+            repeatIntervalTimeUnit = TimeUnit.SECONDS
+        )
+            .addTag(COMMAND_POLL_WORK_TAG)
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            COMMAND_POLL_WORK_TAG,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
+    }
+
     fun cancelAll() {
         workManager.cancelAllWorkByTag(HEARTBEAT_WORK_TAG)
         workManager.cancelAllWorkByTag(EMERGENCY_POLL_WORK_TAG)
+        workManager.cancelAllWorkByTag(COMMAND_POLL_WORK_TAG)
     }
 }

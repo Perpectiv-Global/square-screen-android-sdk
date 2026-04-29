@@ -10,7 +10,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,19 +29,21 @@ import kotlinx.coroutines.flow.Flow
  * Renders the active playlist, handling item sequencing, duration timing,
  * transitions, and looping.
  *
- * Collect [nowPlaying] and pass it here. The view automatically advances
- * through items according to each item's [io.squarescreen.core.model.PlaylistItem.duration].
- *
  * @param nowPlaying Flow of the current playlist result from [io.squarescreen.player.SquareScreen].
  * @param modifier Modifier applied to the root container.
+ * @param onItemCompleted Called when an item finishes its full display duration.
+ *   Receives the completed item, the epoch-ms timestamp when it started, and when it ended.
+ *   Use this for proof-of-play reporting. [io.squarescreen.ui.SquareScreenDisplay] wires
+ *   this automatically — only set it when using [SquareScreenPlayerView] directly.
  * @param emptyContent Composable shown when the playlist has no items.
- * @param errorContent Composable shown on a persistent error (no cache fallback).
+ * @param errorContent Composable shown on a persistent error with no cache fallback.
  */
 @OptIn(ExperimentalSquareScreenApi::class)
 @Composable
 fun SquareScreenPlayerView(
     nowPlaying: Flow<SquareScreenResult<Playlist>>,
     modifier: Modifier = Modifier,
+    onItemCompleted: ((item: PlaylistItem, startedAt: Long, endedAt: Long) -> Unit)? = null,
     emptyContent: @Composable () -> Unit = { DefaultEmptyContent() },
     errorContent: @Composable () -> Unit = {}
 ) {
@@ -50,7 +51,6 @@ fun SquareScreenPlayerView(
 
     when (val r = result) {
         null -> {
-            // Still loading first result — show nothing
             Box(modifier = modifier.fillMaxSize().background(Color.Black))
         }
         is SquareScreenResult.Error -> {
@@ -63,6 +63,7 @@ fun SquareScreenPlayerView(
             } else {
                 PlaylistRenderer(
                     playlist = playlist,
+                    onItemCompleted = onItemCompleted,
                     modifier = modifier
                 )
             }
@@ -74,6 +75,7 @@ fun SquareScreenPlayerView(
 @Composable
 private fun PlaylistRenderer(
     playlist: Playlist,
+    onItemCompleted: ((item: PlaylistItem, startedAt: Long, endedAt: Long) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     val items = remember(playlist) {
@@ -84,22 +86,25 @@ private fun PlaylistRenderer(
     var currentIndex by remember(playlist) { mutableIntStateOf(0) }
     val currentItem = items[currentIndex]
 
-    // Determine effective transition: item-level overrides strategy default
     val effectiveTransition = currentItem.transition
         ?: playlist.strategy?.defaultTransition
         ?: TransitionType.NONE
 
-    // Advance to the next item after the current item's duration
     LaunchedEffect(currentIndex, playlist) {
-        delay(currentItem.duration * 1000L)
+        val startedAt = System.currentTimeMillis()
+        delay(currentItem.durationSeconds * 1000L)
+        val endedAt = System.currentTimeMillis()
+
+        // Report the completed item before advancing
+        onItemCompleted?.invoke(currentItem, startedAt, endedAt)
+
         val nextIndex = currentIndex + 1
-        val loop = playlist.strategy?.loop != false // default true
+        val loop = playlist.strategy?.loop != false
         if (nextIndex < items.size) {
             currentIndex = nextIndex
         } else if (loop) {
             currentIndex = 0
         }
-        // If loop=false and we're on the last item, stay — don't advance
     }
 
     AnimatedContent(

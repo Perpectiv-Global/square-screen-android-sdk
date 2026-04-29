@@ -27,7 +27,9 @@ class DefaultCacheProvider(
         context.applicationContext,
         SquareScreenDatabase::class.java,
         "squarescreen.db"
-    ).build()
+    )
+        .fallbackToDestructiveMigration()
+        .build()
 
     private val mediaCache = MediaFileCache(
         cacheDir = context.getExternalFilesDir("squarescreen_media")

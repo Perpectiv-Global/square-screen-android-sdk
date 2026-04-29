@@ -1,7 +1,9 @@
 package io.squarescreen.core.datasource
 
+import io.squarescreen.core.model.Command
 import io.squarescreen.core.model.EmergencyAlert
 import io.squarescreen.core.model.HeartbeatPayload
+import io.squarescreen.core.model.PlaybackReport
 import io.squarescreen.core.model.Playlist
 import io.squarescreen.core.result.SquareScreenResult
 
@@ -26,9 +28,7 @@ interface NetworkDataSource {
         limit: Int? = 20
     ): SquareScreenResult<Playlist>
 
-    /**
-     * Posts a device health heartbeat to the server.
-     */
+    /** Posts a device health heartbeat to the server. */
     suspend fun sendHeartbeat(payload: HeartbeatPayload): SquareScreenResult<Unit>
 
     /**
@@ -36,4 +36,29 @@ interface NetworkDataSource {
      * Returns null inside the result when no alert is active.
      */
     suspend fun fetchEmergencyAlert(): SquareScreenResult<EmergencyAlert?>
+
+    /**
+     * Reports a completed playback event (proof-of-play) to the server.
+     * Should be called after each playlist item finishes displaying.
+     */
+    suspend fun reportPlayback(report: PlaybackReport): SquareScreenResult<Unit>
+
+    /**
+     * Polls for pending server-issued commands targeting this device.
+     * Returns an empty list when no commands are pending.
+     */
+    suspend fun fetchCommands(): SquareScreenResult<List<Command>>
+
+    /**
+     * Acknowledges that a command has been executed.
+     *
+     * @param commandId The [Command.id] being acknowledged.
+     * @param status Outcome status (e.g. "completed", "failed").
+     * @param result Optional key-value result payload describing the outcome.
+     */
+    suspend fun acknowledgeCommand(
+        commandId: String,
+        status: String,
+        result: Map<String, String> = emptyMap()
+    ): SquareScreenResult<Unit>
 }

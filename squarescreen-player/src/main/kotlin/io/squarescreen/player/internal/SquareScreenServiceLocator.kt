@@ -3,7 +3,7 @@ package io.squarescreen.player.internal
 import io.squarescreen.core.config.SquareScreenConfig
 import io.squarescreen.core.datasource.NetworkDataSource
 import io.squarescreen.core.cache.CacheProvider
-import io.squarescreen.core.logging.SquareScreenLogger
+import io.squarescreen.core.model.Command
 import io.squarescreen.core.model.DeviceStatus
 import io.squarescreen.core.model.EmergencyAlert
 import io.squarescreen.core.model.Playlist
@@ -19,6 +19,7 @@ internal object SquareScreenServiceLocator {
     val nowPlayingState = MutableStateFlow<SquareScreenResult<Playlist>?>(null)
     val emergencyAlertState = MutableStateFlow<EmergencyAlert?>(null)
     val deviceStatusState = MutableStateFlow(DeviceStatus.CONNECTING)
+    val commandsState = MutableStateFlow<List<Command>>(emptyList())
 
     fun log(tag: String, message: String) {
         config?.logger?.debug(tag, message)
@@ -35,5 +36,6 @@ internal object SquareScreenServiceLocator {
         nowPlayingState.value = null
         emergencyAlertState.value = null
         deviceStatusState.value = DeviceStatus.CONNECTING
+        commandsState.value = emptyList()
     }
 }

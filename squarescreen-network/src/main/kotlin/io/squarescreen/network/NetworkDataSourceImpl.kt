@@ -1,12 +1,15 @@
 package io.squarescreen.network
 
 import io.squarescreen.core.datasource.NetworkDataSource
+import io.squarescreen.core.model.Command
 import io.squarescreen.core.model.EmergencyAlert
 import io.squarescreen.core.model.HeartbeatPayload
+import io.squarescreen.core.model.PlaybackReport
 import io.squarescreen.core.model.Playlist
 import io.squarescreen.core.result.SquareScreenError
 import io.squarescreen.core.result.SquareScreenResult
 import io.squarescreen.network.api.SquareScreenApiService
+import io.squarescreen.network.dto.AckRequestDto
 import io.squarescreen.network.mapper.NetworkMapper
 
 internal class NetworkDataSourceImpl(
@@ -35,11 +38,8 @@ internal class NetworkDataSourceImpl(
     override suspend fun sendHeartbeat(payload: HeartbeatPayload): SquareScreenResult<Unit> =
         safeApiCall {
             val response = api.postHeartbeat(payload)
-            if (response.isSuccessful) {
-                SquareScreenResult.Success(Unit)
-            } else {
-                SquareScreenResult.Error(mapHttpError(response.code(), response.message()))
-            }
+            if (response.isSuccessful) SquareScreenResult.Success(Unit)
+            else SquareScreenResult.Error(mapHttpError(response.code(), response.message()))
         }
 
     override suspend fun fetchEmergencyAlert(): SquareScreenResult<EmergencyAlert?> =
@@ -49,16 +49,44 @@ internal class NetworkDataSourceImpl(
                 val body = response.body() ?: return@safeApiCall SquareScreenResult.Error(
                     SquareScreenError.ParseError("Emergency response body was null")
                 )
-                val alert = if (body.active && body.broadcast != null) {
-                    NetworkMapper.mapEmergencyBroadcast(body.broadcast)
-                } else {
-                    null
-                }
+                // Alert is active if the emergency object is present and is_active is true
+                val alert = body.emergency?.takeIf { it.isActive }
+                    ?.let { NetworkMapper.mapEmergencyBroadcast(it) }
                 SquareScreenResult.Success(alert)
             } else {
                 SquareScreenResult.Error(mapHttpError(response.code(), response.message()))
             }
         }
+
+    override suspend fun reportPlayback(report: PlaybackReport): SquareScreenResult<Unit> =
+        safeApiCall {
+            val response = api.reportPlayback(report)
+            if (response.isSuccessful) SquareScreenResult.Success(Unit)
+            else SquareScreenResult.Error(mapHttpError(response.code(), response.message()))
+        }
+
+    override suspend fun fetchCommands(): SquareScreenResult<List<Command>> =
+        safeApiCall {
+            val response = api.getCommands()
+            if (response.isSuccessful) {
+                val body = response.body() ?: return@safeApiCall SquareScreenResult.Error(
+                    SquareScreenError.ParseError("Commands response body was null")
+                )
+                SquareScreenResult.Success(body.commands.map { NetworkMapper.mapCommand(it) })
+            } else {
+                SquareScreenResult.Error(mapHttpError(response.code(), response.message()))
+            }
+        }
+
+    override suspend fun acknowledgeCommand(
+        commandId: String,
+        status: String,
+        result: Map<String, String>
+    ): SquareScreenResult<Unit> = safeApiCall {
+        val response = api.acknowledgeCommand(commandId, AckRequestDto(status, result))
+        if (response.isSuccessful) SquareScreenResult.Success(Unit)
+        else SquareScreenResult.Error(mapHttpError(response.code(), response.message()))
+    }
 
     private fun mapHttpError(code: Int, message: String): SquareScreenError {
         return when (code) {

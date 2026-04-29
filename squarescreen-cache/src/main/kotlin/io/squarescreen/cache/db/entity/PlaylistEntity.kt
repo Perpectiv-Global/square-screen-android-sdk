@@ -11,10 +11,14 @@ import androidx.room.PrimaryKey
 internal data class PlaylistEntity(
     @PrimaryKey val id: Int = 1,
     val cachedAt: Long,
-    // Strategy fields (flattened — avoids nested object complexity in Room)
+    // Strategy fields (flattened)
     val strategyLoop: Boolean?,
     val strategyShuffle: Boolean?,
-    val strategyPreloadCount: Int?,
-    val strategyShowThumbnail: Boolean?,
-    val strategyDefaultTransition: String?
+    // Schedule metadata
+    val scheduleUuid: String?,
+    val scheduleName: String?,
+    val schedulePriority: Int?,
+    // Playlist metadata
+    val playlistUuid: String?,
+    val playlistName: String?
 )

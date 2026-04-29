@@ -5,5 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class NowPlayingResponseDto(
     val items: List<PlaylistItemDto> = emptyList(),
-    val strategy: PlaybackStrategyDto? = null
+    val strategy: PlaybackStrategyDto? = null,
+    val schedule: ScheduleInfoDto? = null,
+    val playlist: PlaylistInfoDto? = null
 )

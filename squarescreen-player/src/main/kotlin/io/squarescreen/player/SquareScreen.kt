@@ -5,13 +5,16 @@ import android.content.Intent
 import io.squarescreen.cache.CacheProviderFactory
 import io.squarescreen.core.config.SquareScreenConfig
 import io.squarescreen.core.exception.SquareScreenNotInitializedException
+import io.squarescreen.core.model.Command
 import io.squarescreen.core.model.DeviceStatus
 import io.squarescreen.core.model.EmergencyAlert
+import io.squarescreen.core.model.PlaybackReport
 import io.squarescreen.core.model.Playlist
 import io.squarescreen.core.result.SquareScreenError
 import io.squarescreen.core.result.SquareScreenResult
 import io.squarescreen.network.NetworkClientFactory
 import io.squarescreen.player.internal.PlayerRepository
+import io.squarescreen.player.internal.SDK_VERSION
 import io.squarescreen.player.internal.SquareScreenServiceLocator
 import io.squarescreen.player.service.SquareScreenPlayerService
 import io.squarescreen.player.worker.WorkScheduler
@@ -49,7 +52,7 @@ class SquareScreen private constructor(
         SquareScreenServiceLocator.nowPlayingState.filterNotNull()
 
     /**
-     * Active emergency alert, or null when none is broadcast.
+     * Active emergency alert, or null when no broadcast is active.
      * Emits null immediately on collection (no active alert at startup).
      */
     val emergencyAlert: Flow<EmergencyAlert?> =
@@ -59,13 +62,21 @@ class SquareScreen private constructor(
     val deviceStatus: Flow<DeviceStatus> =
         SquareScreenServiceLocator.deviceStatusState
 
+    /**
+     * Pending server-issued commands for this device.
+     * Emits an empty list initially and whenever a command poll returns no commands.
+     * After handling a command, call [acknowledgeCommand] to confirm execution.
+     */
+    val commands: Flow<List<Command>> =
+        SquareScreenServiceLocator.commandsState
+
     // -------------------------------------------------------------------------
     // Manual controls
     // -------------------------------------------------------------------------
 
     /**
      * Forces a playlist refresh, bypassing the cache TTL.
-     * The [nowPlaying] flow will emit the new result automatically.
+     * The [nowPlaying] Flow will emit the new result automatically.
      */
     suspend fun refresh(): SquareScreenResult<Playlist> {
         SquareScreenServiceLocator.log(TAG, "Manual refresh requested")
@@ -88,9 +99,35 @@ class SquareScreen private constructor(
     }
 
     /**
+     * Reports a completed playback event (proof-of-play) to the server.
+     *
+     * Call this after each [io.squarescreen.core.model.PlaylistItem] finishes displaying.
+     * [io.squarescreen.ui.SquareScreenDisplay] does this automatically when using the
+     * UI module. Call manually if using [io.squarescreen.player.SquareScreen] headlessly.
+     */
+    suspend fun reportPlayback(report: PlaybackReport): SquareScreenResult<Unit> {
+        SquareScreenServiceLocator.log(TAG, "Reporting playback for media ${report.mediaUuid}")
+        return repository.reportPlayback(report)
+    }
+
+    /**
+     * Acknowledges that a command has been executed.
+     *
+     * @param commandId The [Command.id] being acknowledged.
+     * @param status Outcome status — typically "completed" or "failed".
+     * @param result Optional key-value payload describing the outcome.
+     */
+    suspend fun acknowledgeCommand(
+        commandId: String,
+        status: String,
+        result: Map<String, String> = emptyMap()
+    ): SquareScreenResult<Unit> {
+        SquareScreenServiceLocator.log(TAG, "Acknowledging command $commandId ($status)")
+        return repository.acknowledgeCommand(commandId, status, result)
+    }
+
+    /**
      * Stops the foreground service and cancels all WorkManager tasks.
-     * After calling this, [getInstance] will still return this instance
-     * but background work will not run.
      */
     fun shutdown() {
         SquareScreenServiceLocator.log(TAG, "Shutdown requested")
@@ -105,8 +142,6 @@ class SquareScreen private constructor(
     /**
      * Subscribes to [nowPlaying] using callbacks instead of Flow collection.
      * Returns a [Job] that can be cancelled to stop receiving updates.
-     *
-     * @param scope The coroutine scope in which callbacks are delivered.
      */
     fun nowPlayingCallback(
         scope: CoroutineScope,
@@ -122,8 +157,6 @@ class SquareScreen private constructor(
     /**
      * Subscribes to [emergencyAlert] using callbacks instead of Flow collection.
      * Returns a [Job] that can be cancelled to stop receiving updates.
-     *
-     * @param scope The coroutine scope in which callbacks are delivered.
      */
     fun emergencyAlertCallback(
         scope: CoroutineScope,
@@ -133,27 +166,34 @@ class SquareScreen private constructor(
         if (alert != null) onAlert(alert) else onCleared()
     }.launchIn(scope)
 
+    /**
+     * Subscribes to [commands] using a callback instead of Flow collection.
+     * Returns a [Job] that can be cancelled to stop receiving updates.
+     */
+    fun commandsCallback(
+        scope: CoroutineScope,
+        onCommands: (List<Command>) -> Unit
+    ): Job = commands.onEach { onCommands(it) }.launchIn(scope)
+
     // -------------------------------------------------------------------------
     // Internal startup
     // -------------------------------------------------------------------------
 
     internal fun start() {
-        // Trigger initial playlist fetch
         scope.launch {
             SquareScreenServiceLocator.log(TAG, "Starting initial playlist fetch")
             val result = repository.fetchPlaylist()
             SquareScreenServiceLocator.nowPlayingState.value = result
         }
 
-        // Start WorkManager tasks
         workScheduler.scheduleHeartbeat(config.heartbeatIntervalSeconds)
         workScheduler.scheduleEmergencyPoll(config.emergencyPollIntervalSeconds)
+        workScheduler.scheduleCommandPoll()
 
-        // Start foreground service
         val serviceIntent = Intent(appContext, SquareScreenPlayerService::class.java)
         appContext.startForegroundService(serviceIntent)
 
-        SquareScreenServiceLocator.log(TAG, "SquareScreen SDK started (v${io.squarescreen.player.internal.SDK_VERSION})")
+        SquareScreenServiceLocator.log(TAG, "SquareScreen SDK started (v$SDK_VERSION)")
     }
 
     // -------------------------------------------------------------------------
@@ -165,9 +205,7 @@ class SquareScreen private constructor(
 
         /**
          * Initializes the SDK. Must be called once in `Application.onCreate()`.
-         *
-         * Calling this more than once is a no-op after the first successful call.
-         * A warning is logged if called again.
+         * Calling more than once is a no-op; a warning is logged on subsequent calls.
          */
         fun init(context: Context, config: SquareScreenConfig) {
             if (instance != null) {
@@ -196,12 +234,10 @@ class SquareScreen private constructor(
 
         /**
          * Returns the initialized [SquareScreen] instance.
-         *
          * @throws SquareScreenNotInitializedException if [init] has not been called.
          */
         fun getInstance(): SquareScreen {
-            return instance
-                ?: throw SquareScreenNotInitializedException()
+            return instance ?: throw SquareScreenNotInitializedException()
         }
 
         /** For testing only — resets singleton state. */
