@@ -1,0 +1,25 @@
+# local.properties.example
+#
+# Copy this file to ~/.gradle/gradle.properties (never to local.properties —
+# that file is gitignored for a reason) and fill in the real values.
+#
+# For CI/CD, set these as repository secrets and pass them via
+# ORG_GRADLE_PROJECT_* environment variables (GitHub Actions example in .github/workflows/).
+
+# ─── Maven Central (Central Portal) ──────────────────────────────────────────
+# Generate at: https://central.sonatype.com/ → User Token
+mavenCentralUsername=your_sonatype_username_token
+mavenCentralPassword=your_sonatype_password_token
+
+# ─── GPG Signing ─────────────────────────────────────────────────────────────
+# Use in-memory signing (recommended for CI).
+# Export your key:  gpg --export-secret-keys --armor KEY_ID | base64
+signingInMemoryKeyId=12345678
+signingInMemoryKey=LS0tLS1CRUdJTi...  # base64-encoded armored private key
+signingInMemoryKeyPassword=your_gpg_passphrase
+
+# ─── GitHub Packages (optional alternative registry) ─────────────────────────
+# Generate at: GitHub → Settings → Developer settings → Personal access tokens
+# Token needs: write:packages, read:packages
+githubPackagesUsername=your_github_username
+githubPackagesToken=ghp_xxxxxxxxxxxxxxxxxxxx

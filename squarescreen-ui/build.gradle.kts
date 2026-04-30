@@ -1,3 +1,5 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -46,4 +48,41 @@ dependencies {
 
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
+}
+
+mavenPublishing {
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
+
+    coordinates(
+        groupId = project.property("GROUP") as String,
+        artifactId = "squarescreen-ui",
+        version = project.property("VERSION_NAME") as String,
+    )
+
+    pom {
+        name = "SquareScreen UI"
+        description = "Jetpack Compose UI components for the SquareScreen Android SDK — fullscreen player, emergency overlay, and media rendering."
+        inceptionYear = "2024"
+        url = project.property("POM_URL") as String
+        licenses {
+            license {
+                name = "Apache-2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                distribution = "repo"
+            }
+        }
+        developers {
+            developer {
+                id = "squarescreen"
+                name = "SquareScreen"
+                url = "https://squarescreen.io"
+            }
+        }
+        scm {
+            url = project.property("POM_SCM_URL") as String
+            connection = project.property("POM_SCM_CONNECTION") as String
+            developerConnection = project.property("POM_SCM_DEV_CONNECTION") as String
+        }
+    }
 }
