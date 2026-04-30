@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  release:
+    name: Publish to Maven Central
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      - name: Run tests
+        run: ./gradlew test --stacktrace
+
+      - name: Check public API compatibility
+        run: ./gradlew apiCheck
+
+      - name: Publish to Maven Central
+        # --no-configuration-cache: vanniktech publish tasks are not yet
+        # fully compatible with Gradle configuration cache.
+        run: ./gradlew publishAllPublicationsToMavenCentralRepository --no-configuration-cache
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "v${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## SquareScreen Android SDK v${{ steps.version.outputs.VERSION }}
+
+            ### Installation
+
+            Add to your `build.gradle.kts`:
+            ```kotlin
+            dependencies {
+                // Core player (required)
+                implementation("io.squarescreen:squarescreen-player:${{ steps.version.outputs.VERSION }}")
+
+                // Jetpack Compose UI components (optional)
+                implementation("io.squarescreen:squarescreen-ui:${{ steps.version.outputs.VERSION }}")
+            }
+            ```
+
+            See [CHANGELOG.md](CHANGELOG.md) for what's changed in this release.
+          generate_release_notes: true
