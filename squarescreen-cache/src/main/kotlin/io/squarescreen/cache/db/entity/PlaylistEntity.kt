@@ -14,6 +14,7 @@ internal data class PlaylistEntity(
     // Strategy fields (flattened)
     val strategyLoop: Boolean?,
     val strategyShuffle: Boolean?,
+    val strategyPreloadCount: Int?,
     // Schedule metadata
     val scheduleUuid: String?,
     val scheduleName: String?,

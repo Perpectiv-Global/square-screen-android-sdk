@@ -31,29 +31,41 @@ internal object NetworkMapper {
 
     private fun mapPlaylistItem(dto: PlaylistItemDto): PlaylistItem {
         return PlaylistItem(
-            uuid = dto.uuid,
-            name = dto.name,
-            type = when (dto.type.lowercase()) {
-                "image" -> MediaType.IMAGE
-                "video" -> MediaType.VIDEO
-                else -> MediaType.IMAGE
-            },
+            id = dto.id,
+            // The API no longer returns an explicit type field. Infer from the URL
+            // file extension — this is reliable for CDN-hosted media files.
+            type = inferMediaType(dto.url),
             url = dto.url,
-            durationSeconds = dto.durationSeconds,
+            duration = dto.duration,
             width = dto.width,
             height = dto.height,
-            quality = dto.quality,
-            transition = dto.transition?.let { mapTransition(it) }
+            transition = dto.transition?.let { mapTransition(it) },
+            title = dto.title,
+            thumbnail = dto.thumbnail
         )
+    }
+
+    /**
+     * Infers [MediaType] from the file extension of [url].
+     * Strips query parameters before checking the extension.
+     * Defaults to [MediaType.IMAGE] for unrecognised extensions.
+     */
+    private fun inferMediaType(url: String): MediaType {
+        val extension = url.substringAfterLast('.')
+            .lowercase()
+            .substringBefore('?')
+            .substringBefore('#')
+        return when (extension) {
+            "mp4", "mov", "avi", "mkv", "webm", "m4v", "ts" -> MediaType.VIDEO
+            else -> MediaType.IMAGE
+        }
     }
 
     private fun mapStrategy(dto: PlaybackStrategyDto): PlaybackStrategy {
         return PlaybackStrategy(
             loop = dto.loop,
             shuffle = dto.shuffle,
-            preloadCount = dto.preloadCount,
-            showThumbnail = dto.showThumbnail,
-            defaultTransition = mapTransition(dto.defaultTransition) ?: TransitionType.NONE
+            preloadCount = dto.preloadCount
         )
     }
 

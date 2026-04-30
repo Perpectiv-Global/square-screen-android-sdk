@@ -7,17 +7,13 @@ import io.squarescreen.core.annotation.ExperimentalSquareScreenApi
  *
  * This type is experimental — additional fields may be added as the backend API evolves.
  *
- * @param loop Whether the playlist should loop continuously.
+ * @param loop Whether the playlist should loop continuously after the last item.
  * @param shuffle Whether items should be played in random order.
- * @param preloadCount Number of items to preload ahead of the current position.
- * @param showThumbnail Whether to show a thumbnail preview during transitions.
- * @param defaultTransition Default transition to apply when a PlaylistItem has none set.
+ * @param preloadCount Number of upcoming items to preload ahead of the current position.
  */
 @ExperimentalSquareScreenApi
 data class PlaybackStrategy(
     val loop: Boolean = true,
     val shuffle: Boolean = false,
-    val preloadCount: Int = 1,
-    val showThumbnail: Boolean = false,
-    val defaultTransition: TransitionType = TransitionType.NONE
+    val preloadCount: Int = 1
 )

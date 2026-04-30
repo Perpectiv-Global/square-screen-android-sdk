@@ -18,16 +18,16 @@ import androidx.room.PrimaryKey
     indices = [Index("playlistId")]
 )
 internal data class PlaylistItemEntity(
-    @PrimaryKey val uuid: String,
+    @PrimaryKey val id: String,
     val playlistId: Int = 1,
-    val name: String,
     val type: String,
     val url: String,
-    val durationSeconds: Int,
+    val duration: Int,
     val width: Int? = null,
     val height: Int? = null,
-    val quality: String? = null,
     val transition: String?,
+    val title: String? = null,
+    val thumbnail: String? = null,
     /** Preserves server-defined display order. */
     val sortOrder: Int
 )

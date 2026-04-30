@@ -1,17 +1,15 @@
 package io.squarescreen.network.dto
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 internal data class PlaylistItemDto(
-    val uuid: String,
-    val name: String,
-    val type: String,
+    val id: String,
     val url: String,
-    @SerialName("duration_seconds") val durationSeconds: Int,
+    val duration: Int,
     val width: Int? = null,
     val height: Int? = null,
-    val quality: String? = null,
-    val transition: String? = null
+    val transition: String? = null,
+    val title: String? = null,
+    val thumbnail: String? = null
 )

@@ -18,7 +18,8 @@ internal object CacheMapper {
         val strategy = if (entity.strategyLoop != null) {
             PlaybackStrategy(
                 loop = entity.strategyLoop,
-                shuffle = entity.strategyShuffle ?: false
+                shuffle = entity.strategyShuffle ?: false,
+                preloadCount = entity.strategyPreloadCount ?: 1
             )
         } else null
 
@@ -50,6 +51,7 @@ internal object CacheMapper {
             cachedAt = playlist.cachedAt,
             strategyLoop = strategy?.loop,
             strategyShuffle = strategy?.shuffle,
+            strategyPreloadCount = strategy?.preloadCount,
             scheduleUuid = playlist.schedule?.uuid,
             scheduleName = playlist.schedule?.name,
             schedulePriority = playlist.schedule?.priority,
@@ -61,16 +63,16 @@ internal object CacheMapper {
     fun toItemEntities(playlist: Playlist): List<PlaylistItemEntity> {
         return playlist.items.mapIndexed { index, item ->
             PlaylistItemEntity(
-                uuid = item.uuid,
+                id = item.id,
                 playlistId = 1,
-                name = item.name,
                 type = item.type.name.lowercase(),
                 url = item.url,
-                durationSeconds = item.durationSeconds,
+                duration = item.duration,
                 width = item.width,
                 height = item.height,
-                quality = item.quality,
                 transition = item.transition?.name?.lowercase(),
+                title = item.title,
+                thumbnail = item.thumbnail,
                 sortOrder = index
             )
         }
@@ -78,19 +80,20 @@ internal object CacheMapper {
 
     private fun toPlaylistItem(entity: PlaylistItemEntity): PlaylistItem {
         return PlaylistItem(
-            uuid = entity.uuid,
-            name = entity.name,
+            id = entity.id,
+            // Type was inferred at network time and stored as a string.
+            // Re-map back to the enum on read.
             type = when (entity.type.lowercase()) {
-                "image" -> MediaType.IMAGE
                 "video" -> MediaType.VIDEO
                 else -> MediaType.IMAGE
             },
             url = entity.url,
-            durationSeconds = entity.durationSeconds,
+            duration = entity.duration,
             width = entity.width,
             height = entity.height,
-            quality = entity.quality,
-            transition = mapTransition(entity.transition)
+            transition = mapTransition(entity.transition),
+            title = entity.title,
+            thumbnail = entity.thumbnail
         )
     }
 

@@ -95,7 +95,7 @@ class NetworkDataSourceImplTest {
     fun `auth headers are injected on emergency request`() = runTest {
         mockWebServer.enqueue(MockResponse()
             .setResponseCode(200)
-            .setBody("""{"active":false,"broadcast":null}"""))
+            .setBody("""{"emergency":null}"""))
 
         dataSource.fetchEmergencyAlert()
 
@@ -114,19 +114,18 @@ class NetworkDataSourceImplTest {
                 {
                   "items": [
                     {
-                      "id": 1,
-                      "type": "image",
+                      "id": "mf-00000001-0000-0000-0000-000000000001",
                       "url": "https://cdn.example.com/banner.jpg",
                       "duration": 10,
+                      "width": 1920,
+                      "height": 1080,
                       "transition": "fade"
                     }
                   ],
                   "strategy": {
                     "loop": true,
                     "shuffle": false,
-                    "preloadCount": 3,
-                    "showThumbnail": true,
-                    "defaultTransition": "fade"
+                    "preloadCount": 2
                   }
                 }
             """.trimIndent()))
@@ -137,11 +136,42 @@ class NetworkDataSourceImplTest {
         val playlist = (result as SquareScreenResult.Success).data
         assertEquals(1, playlist.items.size)
         val item = playlist.items[0]
-        assertEquals(1, item.id)
+        assertEquals("mf-00000001-0000-0000-0000-000000000001", item.id)
+        // Type inferred from .jpg extension
         assertEquals(MediaType.IMAGE, item.type)
         assertEquals("https://cdn.example.com/banner.jpg", item.url)
         assertEquals(10, item.duration)
         assertEquals(TransitionType.FADE, item.transition)
+    }
+
+    @Test
+    fun `fetchNowPlaying infers VIDEO type from mp4 url`() = runTest {
+        mockWebServer.enqueue(MockResponse()
+            .setResponseCode(200)
+            .setBody("""
+                {
+                  "items": [
+                    {
+                      "id": "mf-00000002-0000-0000-0000-000000000002",
+                      "url": "https://cdn.example.com/brand_intro.mp4",
+                      "duration": 90,
+                      "width": 1920,
+                      "height": 1080,
+                      "transition": "fade",
+                      "title": "Brand Introduction Video",
+                      "thumbnail": "https://cdn.example.com/thumb.jpg"
+                    }
+                  ],
+                  "strategy": { "loop": true, "shuffle": false, "preloadCount": 2 }
+                }
+            """.trimIndent()))
+
+        val result = dataSource.fetchNowPlaying()
+        val item = (result as SquareScreenResult.Success).data.items[0]
+
+        assertEquals(MediaType.VIDEO, item.type)
+        assertEquals("Brand Introduction Video", item.title)
+        assertEquals("https://cdn.example.com/thumb.jpg", item.thumbnail)
     }
 
     @Test
@@ -153,8 +183,7 @@ class NetworkDataSourceImplTest {
         val result = dataSource.fetchNowPlaying()
 
         assertTrue(result is SquareScreenResult.Success)
-        val playlist = (result as SquareScreenResult.Success).data
-        assertTrue(playlist.items.isEmpty())
+        assertTrue((result as SquareScreenResult.Success).data.items.isEmpty())
     }
 
     @Test
@@ -172,20 +201,14 @@ class NetworkDataSourceImplTest {
     @Test
     fun `fetchNowPlaying returns AuthError on HTTP 401`() = runTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(401))
-
         val result = dataSource.fetchNowPlaying()
-
-        assertTrue(result is SquareScreenResult.Error)
         assertTrue((result as SquareScreenResult.Error).error is SquareScreenError.AuthError)
     }
 
     @Test
     fun `fetchNowPlaying returns AuthError on HTTP 403`() = runTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(403))
-
         val result = dataSource.fetchNowPlaying()
-
-        assertTrue(result is SquareScreenResult.Error)
         assertTrue((result as SquareScreenResult.Error).error is SquareScreenError.AuthError)
     }
 
@@ -194,10 +217,7 @@ class NetworkDataSourceImplTest {
         mockWebServer.enqueue(MockResponse()
             .setResponseCode(200)
             .setBody("not valid json {{{{"))
-
         val result = dataSource.fetchNowPlaying()
-
-        assertTrue(result is SquareScreenResult.Error)
         assertTrue((result as SquareScreenResult.Error).error is SquareScreenError.Unknown)
     }
 
@@ -211,15 +231,10 @@ class NetworkDataSourceImplTest {
 
         val result = dataSource.sendHeartbeat(
             io.squarescreen.core.model.HeartbeatPayload(
-                cpuUsage = 42.5f,
-                memoryUsage = 61.0f,
-                diskUsage = 28.3f,
-                temperature = 52.0f,
-                osVersion = "Android 14",
-                playerVersion = "0.1.0"
+                cpuUsage = 42.5f, memoryUsage = 61.0f, diskUsage = 28.3f,
+                temperature = 52.0f, osVersion = "Android 14", playerVersion = "0.1.0"
             )
         )
-
         assertTrue(result is SquareScreenResult.Success)
     }
 
@@ -231,12 +246,8 @@ class NetworkDataSourceImplTest {
 
         dataSource.sendHeartbeat(
             io.squarescreen.core.model.HeartbeatPayload(
-                cpuUsage = 42.5f,
-                memoryUsage = 61.0f,
-                diskUsage = 28.3f,
-                temperature = 52.0f,
-                osVersion = "Android 13",
-                playerVersion = "1.2.0"
+                cpuUsage = 42.5f, memoryUsage = 61.0f, diskUsage = 28.3f,
+                temperature = 52.0f, osVersion = "Android 13", playerVersion = "1.2.0"
             )
         )
 
@@ -257,15 +268,10 @@ class NetworkDataSourceImplTest {
 
         val result = dataSource.sendHeartbeat(
             io.squarescreen.core.model.HeartbeatPayload(
-                cpuUsage = null,
-                memoryUsage = null,
-                diskUsage = null,
-                temperature = null,
-                osVersion = "Android 14",
-                playerVersion = "0.1.0"
+                cpuUsage = null, memoryUsage = null, diskUsage = null,
+                temperature = null, osVersion = "Android 14", playerVersion = "0.1.0"
             )
         )
-
         assertTrue(result is SquareScreenResult.Success)
     }
 
@@ -277,13 +283,18 @@ class NetworkDataSourceImplTest {
             .setResponseCode(200)
             .setBody("""
                 {
-                  "active": true,
-                  "broadcast": {
-                    "id": "uuid-123",
+                  "emergency": {
+                    "id": 1,
+                    "uuid": "eb-00000001-0000-0000-0000-000000000001",
+                    "company_id": 1,
                     "title": "FIRE ALARM",
                     "message": "Evacuate immediately.",
                     "background_color": "#FF0000",
-                    "text_color": "#FFFFFF"
+                    "text_color": "#FFFFFF",
+                    "target_scope": "all",
+                    "is_active": true,
+                    "started_at": "2026-04-28T08:00:00.000000Z",
+                    "ended_at": null
                   }
                 }
             """.trimIndent()))
@@ -293,21 +304,47 @@ class NetworkDataSourceImplTest {
         assertTrue(result is SquareScreenResult.Success)
         val alert = (result as SquareScreenResult.Success).data
         assertNotNull(alert)
-        assertEquals("uuid-123", alert!!.id)
-        assertEquals("FIRE ALARM", alert.title)
+        assertEquals("FIRE ALARM", alert!!.title)
         assertEquals("Evacuate immediately.", alert.message)
         assertEquals("#FF0000", alert.backgroundColor)
         assertEquals("#FFFFFF", alert.textColor)
+        assertTrue(alert.isActive)
     }
 
     @Test
-    fun `fetchEmergencyAlert returns null when not active`() = runTest {
+    fun `fetchEmergencyAlert returns null when emergency is null`() = runTest {
         mockWebServer.enqueue(MockResponse()
             .setResponseCode(200)
-            .setBody("""{"active":false,"broadcast":null}"""))
+            .setBody("""{"emergency":null}"""))
 
         val result = dataSource.fetchEmergencyAlert()
+        assertTrue(result is SquareScreenResult.Success)
+        assertNull((result as SquareScreenResult.Success).data)
+    }
 
+    @Test
+    fun `fetchEmergencyAlert returns null when is_active is false`() = runTest {
+        mockWebServer.enqueue(MockResponse()
+            .setResponseCode(200)
+            .setBody("""
+                {
+                  "emergency": {
+                    "id": 1,
+                    "uuid": "eb-00000001-0000-0000-0000-000000000001",
+                    "company_id": 1,
+                    "title": "Old Alert",
+                    "message": "This alert has ended.",
+                    "background_color": "#FF0000",
+                    "text_color": "#FFFFFF",
+                    "target_scope": "all",
+                    "is_active": false,
+                    "started_at": "2026-04-28T08:00:00.000000Z",
+                    "ended_at": "2026-04-28T09:00:00.000000Z"
+                  }
+                }
+            """.trimIndent()))
+
+        val result = dataSource.fetchEmergencyAlert()
         assertTrue(result is SquareScreenResult.Success)
         assertNull((result as SquareScreenResult.Success).data)
     }
@@ -315,10 +352,7 @@ class NetworkDataSourceImplTest {
     @Test
     fun `fetchEmergencyAlert returns NetworkError on HTTP 500`() = runTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(500))
-
         val result = dataSource.fetchEmergencyAlert()
-
-        assertTrue(result is SquareScreenResult.Error)
         assertTrue((result as SquareScreenResult.Error).error is SquareScreenError.NetworkError)
     }
 }

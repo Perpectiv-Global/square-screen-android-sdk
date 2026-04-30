@@ -8,7 +8,7 @@ import io.squarescreen.cache.db.entity.PlaylistItemEntity
 
 @Database(
     entities = [PlaylistEntity::class, PlaylistItemEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 internal abstract class SquareScreenDatabase : RoomDatabase() {

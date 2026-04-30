@@ -57,12 +57,12 @@ fun SquareScreenDisplay(
                 scope.launch {
                     squareScreen.reportPlayback(
                         PlaybackReport(
-                            mediaUuid = item.uuid,
+                            mediaUuid = item.id,
                             playlistUuid = currentPlaylist?.playlist?.uuid,
                             scheduleUuid = currentPlaylist?.schedule?.uuid,
                             startedAt = formatIso8601(startedAt),
                             endedAt = formatIso8601(endedAt),
-                            durationSeconds = item.durationSeconds,
+                            durationSeconds = item.duration,
                             completed = true
                         )
                     )

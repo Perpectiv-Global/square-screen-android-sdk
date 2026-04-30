@@ -29,6 +29,7 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         credentialStore = CredentialStore(this)
+        credentialStore.saveCredentials(DeviceCredentials("a", "a"))
 
         // Initialize the SDK only if we already have credentials.
         // If this is the first launch, MainActivity will call initializeSdk()
