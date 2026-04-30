@@ -91,15 +91,8 @@ fun PairingScreen(onPaired: (DeviceCredentials) -> Unit) {
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // -------------------------------------------------------------------
-            // TODO: Replace these manual input fields with an automatic registration
-            // call once the screen/register endpoint is available.
-            //
-            // The typical automatic flow:
-            //   val deviceUuid = getOrCreateStableDeviceUuid(context)
-            //   val response = api.registerDevice(deviceUuid, Build.MODEL, Build.SERIAL)
-            //   onPaired(DeviceCredentials(deviceUuid, response.token))
-            // -------------------------------------------------------------------
+            // Device ID and token are provisioned via the SquareScreen web dashboard.
+            // Enter the credentials displayed there to pair this device.
 
             OutlinedTextField(
                 value = deviceId,
@@ -143,9 +136,6 @@ fun PairingScreen(onPaired: (DeviceCredentials) -> Unit) {
                     errorMessage = null
                     isLoading = true
                     scope.launch {
-                        // TODO: validate credentials against the server here
-                        // before calling onPaired — e.g. make a test API call
-                        // and only proceed if it succeeds.
                         onPaired(DeviceCredentials(deviceId, deviceToken))
                         isLoading = false
                     }
