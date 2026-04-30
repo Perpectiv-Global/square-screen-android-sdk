@@ -49,7 +49,6 @@ class SampleApplication : Application() {
         SquareScreen.init(
             context = this,
             config = SquareScreenConfig(
-                baseUrl = "https://api.squarescreen.io",
                 deviceId = credentials.deviceId,
                 deviceToken = credentials.deviceToken,
 

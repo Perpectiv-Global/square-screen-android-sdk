@@ -26,7 +26,7 @@ internal object NetworkClientFactory {
 
     fun create(config: SquareScreenConfig): NetworkDataSource {
         val okHttpClient = buildOkHttpClient(config)
-        val retrofit = buildRetrofit(config.baseUrl, okHttpClient)
+        val retrofit = buildRetrofit(BuildConfig.BASE_URL, okHttpClient)
         val api = retrofit.create(SquareScreenApiService::class.java)
         return NetworkDataSourceImpl(api)
     }

@@ -6,11 +6,13 @@ import io.squarescreen.core.logging.SquareScreenLogger
 /**
  * Immutable configuration passed to [io.squarescreen.player.SquareScreen.init].
  *
- * @param baseUrl Base URL of the SquareScreen API (e.g. "https://api.squarescreen.io").
- * @param deviceId Unique identifier for this device (UUID). Injected as `X-Device-Id`.
+ * The API base URL is set automatically per build type (staging for debug builds,
+ * production for release builds) and is not an integrator concern.
+ *
+ * @param deviceId Unique identifier for this device. Injected as `X-Device-Id`.
  * @param deviceToken Auth token for this device. Injected as `X-Device-Token`.
  *   **Security:** Do not hardcode this value. Store it in `EncryptedSharedPreferences`
- *   and retrieve it from a secure backend on first launch.
+ *   and retrieve it after the device pairing flow.
  * @param heartbeatIntervalSeconds How often (in seconds) to post a heartbeat.
  *   Minimum 30, default 60.
  * @param emergencyPollIntervalSeconds How often (in seconds) to poll for emergency alerts.
@@ -23,7 +25,6 @@ import io.squarescreen.core.logging.SquareScreenLogger
  * @param logger Custom logger implementation. Pass null (default) for silent operation.
  */
 data class SquareScreenConfig(
-    val baseUrl: String,
     val deviceId: String,
     val deviceToken: String,
     val heartbeatIntervalSeconds: Long = 60L,
@@ -40,7 +41,6 @@ data class SquareScreenConfig(
         require(emergencyPollIntervalSeconds >= 15) {
             "emergencyPollIntervalSeconds must be at least 15, got $emergencyPollIntervalSeconds"
         }
-        require(baseUrl.isNotBlank()) { "baseUrl must not be blank" }
         require(deviceId.isNotBlank()) { "deviceId must not be blank" }
         require(deviceToken.isNotBlank()) { "deviceToken must not be blank" }
     }

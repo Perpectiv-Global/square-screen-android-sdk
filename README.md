@@ -48,7 +48,6 @@ class MyApplication : Application() {
         SquareScreen.init(
             context = this,
             config = SquareScreenConfig(
-                baseUrl = "https://api.squarescreen.io",
                 deviceId = credentialStore.deviceId,
                 deviceToken = credentialStore.deviceToken,
                 foregroundNotification = ForegroundNotificationConfig(
@@ -87,7 +86,6 @@ fun PlayerScreen() {
 
 ```kotlin
 SquareScreenConfig(
-    baseUrl = "https://api.squarescreen.io",   // required
     deviceId = "...",                           // required — X-Device-Id header
     deviceToken = "...",                        // required — X-Device-Token header
     heartbeatIntervalSeconds = 60L,            // min 30, default 60
@@ -100,6 +98,9 @@ SquareScreenConfig(
     logger = SquareScreenDebugLogger()         // null = silent (recommended for production)
 )
 ```
+
+> The API base URL is managed internally by the SDK — debug builds target staging,
+> release builds target production. Integrators do not set it.
 
 ---
 

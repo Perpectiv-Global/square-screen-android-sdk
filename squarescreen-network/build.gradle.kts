@@ -14,6 +14,20 @@ android {
     defaultConfig {
         minSdk = 29
         consumerProguardFiles("consumer-proguard-rules.pro")
+        buildConfigField("String", "BASE_URL", "\"https://api.squarescreen.io\"")
+    }
+
+    buildTypes {
+        debug {
+            buildConfigField("String", "BASE_URL", "\"https://staging-api.squarescreen.io\"")
+        }
+        release {
+            buildConfigField("String", "BASE_URL", "\"https://api.squarescreen.io\"")
+        }
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     compileOptions {
