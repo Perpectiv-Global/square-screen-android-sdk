@@ -86,13 +86,11 @@ private fun PlaylistRenderer(
     var currentIndex by remember(playlist) { mutableIntStateOf(0) }
     val currentItem = items[currentIndex]
 
-    val effectiveTransition = currentItem.transition
-        ?: playlist.strategy?.defaultTransition
-        ?: TransitionType.NONE
+    val effectiveTransition = currentItem.transition ?: TransitionType.NONE
 
     LaunchedEffect(currentIndex, playlist) {
         val startedAt = System.currentTimeMillis()
-        delay(currentItem.durationSeconds * 1000L)
+        delay(currentItem.duration * 1000L)
         val endedAt = System.currentTimeMillis()
 
         // Report the completed item before advancing

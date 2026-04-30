@@ -1,5 +1,11 @@
 package io.squarescreen.core.result
 
+/**
+ * Describes why a SquareScreen SDK operation failed.
+ *
+ * Always handle [Unknown] in addition to the known variants — this ensures
+ * forward compatibility when new error types are added in future SDK versions.
+ */
 sealed class SquareScreenError {
 
     /** A network request failed. [code] is the HTTP status code, or -1 for connectivity errors. */

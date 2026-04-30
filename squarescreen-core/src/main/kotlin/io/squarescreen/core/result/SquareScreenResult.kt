@@ -1,7 +1,22 @@
 package io.squarescreen.core.result
 
+/**
+ * A discriminated union representing the outcome of a SquareScreen SDK operation.
+ *
+ * Use Kotlin's `when` expression to handle both cases exhaustively:
+ * ```kotlin
+ * when (val result = squareScreen.refresh()) {
+ *     is SquareScreenResult.Success -> showPlaylist(result.data)
+ *     is SquareScreenResult.Error   -> showError(result.error)
+ * }
+ * ```
+ *
+ * Convenience extensions: [getOrNull], [errorOrNull], [isSuccess], [isError].
+ */
 sealed class SquareScreenResult<out T> {
+    /** The operation succeeded. [data] holds the result value. */
     data class Success<T>(val data: T) : SquareScreenResult<T>()
+    /** The operation failed. [error] describes why. */
     data class Error(val error: SquareScreenError) : SquareScreenResult<Nothing>()
 }
 
