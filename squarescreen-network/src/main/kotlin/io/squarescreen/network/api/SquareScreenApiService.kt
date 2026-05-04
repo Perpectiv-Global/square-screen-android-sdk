@@ -16,9 +16,10 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
+// Paths are relative to the base URL which already includes /api/v1/
 internal interface SquareScreenApiService {
 
-    @GET("api/v1/screen/now-playing")
+    @GET("screen/now-playing")
     suspend fun getNowPlaying(
         @Query("type") type: String? = null,
         @Query("category") category: String? = null,
@@ -26,23 +27,23 @@ internal interface SquareScreenApiService {
         @Query("limit") limit: Int? = 20
     ): Response<NowPlayingResponseDto>
 
-    @POST("api/v1/screen/heartbeat")
+    @POST("screen/heartbeat")
     suspend fun postHeartbeat(
         @Body payload: HeartbeatPayload
     ): Response<HeartbeatResponseDto>
 
-    @GET("api/v1/screen/emergency")
+    @GET("screen/emergency")
     suspend fun getEmergencyStatus(): Response<EmergencyResponseDto>
 
-    @POST("api/v1/screen/playback")
+    @POST("screen/playback")
     suspend fun reportPlayback(
         @Body report: PlaybackReport
     ): Response<PlaybackReportResponseDto>
 
-    @GET("api/v1/screen/commands")
+    @GET("screen/commands")
     suspend fun getCommands(): Response<CommandsResponseDto>
 
-    @POST("api/v1/screen/commands/{commandId}/ack")
+    @POST("screen/commands/{commandId}/ack")
     suspend fun acknowledgeCommand(
         @Path("commandId") commandId: String,
         @Body body: AckRequestDto
