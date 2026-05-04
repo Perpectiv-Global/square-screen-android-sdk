@@ -12,6 +12,6 @@ internal fun MediaItemView(
 ) {
     when (item.type) {
         MediaType.IMAGE -> ImageItemView(url = item.url, modifier = modifier)
-        MediaType.VIDEO -> VideoItemView(url = item.url, modifier = modifier)
+        MediaType.VIDEO -> VideoItemView(url = item.url, thumbnailUrl = item.thumbnail, modifier = modifier)
     }
 }
