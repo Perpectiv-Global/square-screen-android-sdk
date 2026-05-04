@@ -19,7 +19,8 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "BASE_URL", "\"https://staging-api.squarescreen.io\"")
+            // Point to production until a staging environment is available.
+            buildConfigField("String", "BASE_URL", "\"https://api.squarescreen.io\"")
         }
         release {
             buildConfigField("String", "BASE_URL", "\"https://api.squarescreen.io\"")
