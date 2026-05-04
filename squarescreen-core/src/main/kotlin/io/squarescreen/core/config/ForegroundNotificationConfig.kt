@@ -1,7 +1,5 @@
 package io.squarescreen.core.config
 
-import androidx.annotation.DrawableRes
-
 /**
  * Configuration for the persistent foreground service notification that keeps
  * the player alive during active playback.
@@ -11,5 +9,5 @@ import androidx.annotation.DrawableRes
  */
 data class ForegroundNotificationConfig(
     val title: String,
-    @DrawableRes val iconResId: Int
+    val iconResId: Int
 )
