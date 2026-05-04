@@ -27,7 +27,8 @@ internal class DeviceMetricsCollector(private val context: Context) {
             if (total == 0L) return null
             ((total - idle).toFloat() / total.toFloat() * 100f).coerceIn(0f, 100f)
         } catch (e: Exception) {
-            SquareScreenServiceLocator.logError(TAG, "Failed to read CPU usage", e)
+            // /proc/stat is restricted on API 26+ — this is expected, not an error.
+            SquareScreenServiceLocator.log(TAG, "CPU usage unavailable (restricted on API 26+): ${e.message}")
             null
         }
     }
