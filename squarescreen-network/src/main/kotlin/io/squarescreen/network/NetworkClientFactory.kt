@@ -13,10 +13,10 @@ import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
 
 /**
- * Internal factory — creates and wires the network stack.
- * Not exposed to integrators.
+ * Creates and wires the network stack.
+ * Not intended for direct use by integrators — accessed by squarescreen-player only.
  */
-internal object NetworkClientFactory {
+object NetworkClientFactory {
 
     private val json = Json {
         ignoreUnknownKeys = true
