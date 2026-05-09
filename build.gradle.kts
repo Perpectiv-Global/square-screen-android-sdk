@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.binary.compatibility.validator)
     alias(libs.plugins.maven.publish) apply false
-    alias(libs.plugins.dokka) apply false
 }
 
 apiValidation {
@@ -29,6 +28,18 @@ subprojects {
                         username = project.findProperty("githubPackagesUsername") as String? ?: ""
                         password = project.findProperty("githubPackagesPassword") as String? ?: ""
                     }
+                }
+            }
+
+            // Add an empty javadoc jar to every Maven publication for Maven Central compliance.
+            // Dokka is disabled due to an ASM9 incompatibility with sealed classes in dependency JARs.
+            // Maven Central explicitly supports empty javadoc jars for non-Java projects.
+            val emptyJavadocJar = tasks.maybeCreate("emptyJavadocJar", org.gradle.api.tasks.bundling.Jar::class.java).apply {
+                archiveClassifier.set("javadoc")
+            }
+            publications.withType(org.gradle.api.publish.maven.MavenPublication::class.java).configureEach {
+                if (artifacts.none { it.classifier == "javadoc" }) {
+                    artifact(emptyJavadocJar)
                 }
             }
         }

@@ -16,7 +16,6 @@ navigationCompose = "2.8.3"
 coreKtx = "1.13.1"
 lifecycleRuntimeKtx = "2.8.6"
 binaryCompatibilityValidator = "0.16.3"
-dokka = "1.9.20"
 mockwebserver = "4.12.0"
 junit = "4.13.2"
 androidxTestExtJunit = "1.2.1"
@@ -88,4 +87,3 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 ksp = { id = "com.google.devtools.ksp", version = "2.0.21-1.0.27" }
 binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }
 maven-publish = { id = "com.vanniktech.maven.publish", version = "0.29.0" }
-dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
