@@ -2,6 +2,7 @@ package io.squarescreen.cache.file
 
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -46,8 +47,8 @@ class MediaFileCacheTest {
     @Test
     fun sameUrlProducesSameFile() {
         val url = "https://cdn.example.com/image.jpg"
-        val source1 = File.createTempFile("t1", ".jpg").also { it.writeText("first") }
-        val source2 = File.createTempFile("t2", ".jpg").also { it.writeText("second") }
+        val source1 = File.createTempFile("tmp1", ".jpg").also { it.writeText("first") }
+        val source2 = File.createTempFile("tmp2", ".jpg").also { it.writeText("second") }
 
         cache.saveFile(url, source1)
         cache.saveFile(url, source2)
@@ -60,8 +61,8 @@ class MediaFileCacheTest {
 
     @Test
     fun differentUrlsProduceDifferentFiles() {
-        val source1 = File.createTempFile("t1", ".jpg").also { it.writeText("image1") }
-        val source2 = File.createTempFile("t2", ".jpg").also { it.writeText("image2") }
+        val source1 = File.createTempFile("tmp1", ".jpg").also { it.writeText("image1") }
+        val source2 = File.createTempFile("tmp2", ".jpg").also { it.writeText("image2") }
 
         cache.saveFile("https://cdn.example.com/a.jpg", source1)
         cache.saveFile("https://cdn.example.com/b.jpg", source2)
@@ -74,7 +75,7 @@ class MediaFileCacheTest {
 
     @Test
     fun clearAll_removesAllCachedFiles() {
-        val source = File.createTempFile("t", ".jpg").also { it.writeText("data") }
+        val source = File.createTempFile("tmp", ".jpg").also { it.writeText("data") }
         val url = "https://cdn.example.com/file.jpg"
         cache.saveFile(url, source)
 

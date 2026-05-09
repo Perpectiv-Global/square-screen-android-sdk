@@ -2,9 +2,11 @@ package io.squarescreen.player.internal
 
 import io.squarescreen.core.cache.CacheProvider
 import io.squarescreen.core.datasource.NetworkDataSource
+import io.squarescreen.core.model.Command
 import io.squarescreen.core.model.DeviceStatus
 import io.squarescreen.core.model.EmergencyAlert
 import io.squarescreen.core.model.HeartbeatPayload
+import io.squarescreen.core.model.PlaybackReport
 import io.squarescreen.core.model.Playlist
 import io.squarescreen.core.result.SquareScreenError
 import io.squarescreen.core.result.SquareScreenResult
@@ -107,12 +109,14 @@ class PlayerRepositoryTest {
     private fun emptyPlaylist(cachedAt: Long) = Playlist(
         items = emptyList(),
         strategy = null,
+        schedule = null,
+        playlist = null,
         cachedAt = cachedAt
     )
 
     private class FakeNetworkDataSource : NetworkDataSource {
         var nowPlayingResult: SquareScreenResult<Playlist> =
-            SquareScreenResult.Success(Playlist(emptyList(), null, 0L))
+            SquareScreenResult.Success(Playlist(emptyList(), null, null, null, 0L))
         var fetchNowPlayingCallCount = 0
 
         override suspend fun fetchNowPlaying(
@@ -127,6 +131,16 @@ class PlayerRepositoryTest {
 
         override suspend fun fetchEmergencyAlert(): SquareScreenResult<EmergencyAlert?> =
             SquareScreenResult.Success(null)
+
+        override suspend fun reportPlayback(report: PlaybackReport): SquareScreenResult<Unit> =
+            SquareScreenResult.Success(Unit)
+
+        override suspend fun fetchCommands(): SquareScreenResult<List<Command>> =
+            SquareScreenResult.Success(emptyList())
+
+        override suspend fun acknowledgeCommand(
+            commandId: String, status: String, result: Map<String, String>
+        ): SquareScreenResult<Unit> = SquareScreenResult.Success(Unit)
     }
 
     private class FakeCacheProvider : CacheProvider {

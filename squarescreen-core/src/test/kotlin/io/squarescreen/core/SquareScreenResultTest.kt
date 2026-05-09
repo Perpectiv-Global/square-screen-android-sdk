@@ -54,7 +54,6 @@ class SquareScreenResultTest {
     fun `SquareScreenConfig rejects short heartbeat interval`() {
         try {
             io.squarescreen.core.config.SquareScreenConfig(
-                baseUrl = "https://api.squarescreen.io",
                 deviceId = "id",
                 deviceToken = "token",
                 heartbeatIntervalSeconds = 10L,
