@@ -13,5 +13,12 @@ local.properties
 
 # API keys / secrets - never commit
 *.keystore
+*.asc
 keystore.properties
 signing.properties
+
+# Project-specific files not for version control
+squarescreen-android-sdk-spec.md
+
+# Claude Code project instructions (local only)
+CLAUDE.md

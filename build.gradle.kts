@@ -31,17 +31,14 @@ subprojects {
                 }
             }
 
-            // Add an empty javadoc jar to every Maven publication for Maven Central compliance.
-            // Dokka is disabled due to an ASM9 incompatibility with sealed classes in dependency JARs.
-            // Maven Central explicitly supports empty javadoc jars for non-Java projects.
-            val emptyJavadocJar = tasks.maybeCreate("emptyJavadocJar", org.gradle.api.tasks.bundling.Jar::class.java).apply {
-                archiveClassifier.set("javadoc")
-            }
-            publications.withType(org.gradle.api.publish.maven.MavenPublication::class.java).configureEach {
-                if (artifacts.none { it.classifier == "javadoc" }) {
-                    artifact(emptyJavadocJar)
-                }
-            }
+        // Dokka crashes with "PermittedSubclasses requires ASM9" when reading sealed
+        // class bytecode from dependency JARs compiled with Java 17. Fix: sever the
+        // dependency between the javadoc Jar task and the Dokka generation task so
+        // the jar runs with no inputs and produces an empty (but valid) javadoc jar.
+        // Maven Central accepts empty javadoc jars for Android/Kotlin libraries.
+        tasks.matching { it.name == "javaDocReleaseJar" }.configureEach {
+            setDependsOn(listOf<Any>())
+        }
         }
     }
 }
