@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>Playlist</title>
+    <link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">
+    <script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async="async"></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/clipboard.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer="defer"></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async="async"></script>
+<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer="defer"></script>
+</head>
+<body>
+    <div class="root">
+<nav class="navigation" id="navigation-wrapper">
+    <div class="navigation--inner">
+        <div class="navigation-title">
+            <button class="menu-toggle" id="menu-toggle" type="button">toggle menu</button>
+            <div class="library-name">
+                    <a class="library-name--link" href="../../../index.html">
+                            squarescreen-core
+                    </a>
+            </div>
+            <div class="library-version">
+            </div>
+        </div>
+        <div class="filter-section" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":squarescreen-core:dokkaHtml/release">androidJvm</button>
+        </div>
+    </div>
+    <div class="navigation-controls">
+        <button class="navigation-controls--btn navigation-controls--theme" id="theme-toggle-button" type="button">switch theme</button>
+        <div class="navigation-controls--btn navigation-controls--search" id="searchBar" role="button">search in API</div>
+    </div>
+</nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="sidebar--inner" id="sideMenu"></div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageIds="squarescreen-core::io.squarescreen.core.model/Playlist///PointingToDeclaration//-694222141">
+  <div class="breadcrumbs"><a href="../../../index.html">squarescreen-core</a><span class="delimiter">/</span><a href="../index.html">io.squarescreen.core.model</a><span class="delimiter">/</span><span class="current">Playlist</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Playlist</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":squarescreen-core:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="index.html">Playlist</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>items<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-playlist-item/index.html">PlaylistItem</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>strategy<span class="token operator">: </span><a href="../-playback-strategy/index.html">PlaybackStrategy</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>schedule<span class="token operator">: </span><a href="../-schedule-info/index.html">ScheduleInfo</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>playlist<span class="token operator">: </span><a href="../-playlist-info/index.html">PlaylistInfo</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>cachedAt<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-long/index.html">Long</a></span></span><span class="token punctuation">)</span></div><p class="paragraph">A resolved playlist ready for playback on this device.</p><p class="paragraph">Emitted by io.squarescreen.player.SquareScreen.nowPlaying whenever the schedule changes or a manual io.squarescreen.player.SquareScreen.refresh is triggered.</p><h4 class="">Parameters</h4><div class="table"><div class="table-row" data-filterable-current=":squarescreen-core:dokkaHtml/release" data-filterable-set=":squarescreen-core:dokkaHtml/release"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>items</span></span></u></div></span></div><div><div class="title"><p class="paragraph">Ordered list of media items to display.</p></div></div></div></div><div class="table-row" data-filterable-current=":squarescreen-core:dokkaHtml/release" data-filterable-set=":squarescreen-core:dokkaHtml/release"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>strategy</span></span></u></div></span></div><div><div class="title"><p class="paragraph">Server-defined playback behaviour (loop, shuffle, preload). Null if the server returned no strategy for the current schedule.</p></div></div></div></div><div class="table-row" data-filterable-current=":squarescreen-core:dokkaHtml/release" data-filterable-set=":squarescreen-core:dokkaHtml/release"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>schedule</span></span></u></div></span></div><div><div class="title"><p class="paragraph">Metadata about the schedule driving this playlist, if any.</p></div></div></div></div><div class="table-row" data-filterable-current=":squarescreen-core:dokkaHtml/release" data-filterable-set=":squarescreen-core:dokkaHtml/release"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>playlist</span></span></u></div></span></div><div><div class="title"><p class="paragraph">Metadata about the playlist itself, if any.</p></div></div></div></div><div class="table-row" data-filterable-current=":squarescreen-core:dokkaHtml/release" data-filterable-set=":squarescreen-core:dokkaHtml/release"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>cached</span><wbr></wbr><span><span>At</span></span></u></div></span></div><div><div class="title"><p class="paragraph">Epoch milliseconds at which this playlist was last fetched and cached.</p></div></div></div></div></div></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="467613804%2FConstructors%2F-694222141" anchor-label="Playlist" id="467613804%2FConstructors%2F-694222141" data-filterable-set=":squarescreen-core:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":squarescreen-core:dokkaHtml/release" data-filterable-set=":squarescreen-core:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-playlist.html"><span><span>Playlist</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="467613804%2FConstructors%2F-694222141"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":squarescreen-core:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">items<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-playlist-item/index.html">PlaylistItem</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">strategy<span class="token operator">: </span><a href="../-playback-strategy/index.html">PlaybackStrategy</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">schedule<span class="token operator">: </span><a href="../-schedule-info/index.html">ScheduleInfo</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">playlist<span class="token operator">: </span><a href="../-playlist-info/index.html">PlaylistInfo</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">cachedAt<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-long/index.html">Long</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="1505426947%2FProperties%2F-694222141" anchor-label="cachedAt" id="1505426947%2FProperties%2F-694222141" data-filterable-set=":squarescreen-core:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":squarescreen-core:dokkaHtml/release" data-filterable-set=":squarescreen-core:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="cached-at.html"><span>cached</span><wbr></wbr><span><span>At</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1505426947%2FProperties%2F-694222141"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":squarescreen-core:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="cached-at.html">cachedAt</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-long/index.html">Long</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="882179138%2FProperties%2F-694222141" anchor-label="items" id="882179138%2FProperties%2F-694222141" data-filterable-set=":squarescreen-core:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":squarescreen-core:dokkaHtml/release" data-filterable-set=":squarescreen-core:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="items.html"><span><span>items</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="882179138%2FProperties%2F-694222141"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":squarescreen-core:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="items.html">items</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-playlist-item/index.html">PlaylistItem</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2138978362%2FProperties%2F-694222141" anchor-label="playlist" id="-2138978362%2FProperties%2F-694222141" data-filterable-set=":squarescreen-core:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":squarescreen-core:dokkaHtml/release" data-filterable-set=":squarescreen-core:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="playlist.html"><span><span>playlist</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2138978362%2FProperties%2F-694222141"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":squarescreen-core:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="playlist.html">playlist</a><span class="token operator">: </span><a href="../-playlist-info/index.html">PlaylistInfo</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="126922401%2FProperties%2F-694222141" anchor-label="schedule" id="126922401%2FProperties%2F-694222141" data-filterable-set=":squarescreen-core:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":squarescreen-core:dokkaHtml/release" data-filterable-set=":squarescreen-core:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="schedule.html"><span><span>schedule</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="126922401%2FProperties%2F-694222141"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":squarescreen-core:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="schedule.html">schedule</a><span class="token operator">: </span><a href="../-schedule-info/index.html">ScheduleInfo</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1870466373%2FProperties%2F-694222141" anchor-label="strategy" id="1870466373%2FProperties%2F-694222141" data-filterable-set=":squarescreen-core:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":squarescreen-core:dokkaHtml/release" data-filterable-set=":squarescreen-core:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="strategy.html"><span><span>strategy</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1870466373%2FProperties%2F-694222141"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":squarescreen-core:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="strategy.html">strategy</a><span class="token operator">: </span><a href="../-playback-strategy/index.html">PlaybackStrategy</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="footer">
+        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span>© 2026 Copyright</span><span
+                class="pull-right"><span>Generated by </span><a
+                href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
+      </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

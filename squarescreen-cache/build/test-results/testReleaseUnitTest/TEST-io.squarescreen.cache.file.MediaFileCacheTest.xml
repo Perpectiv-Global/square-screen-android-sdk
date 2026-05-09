@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.squarescreen.cache.file.MediaFileCacheTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-05-09T08:51:52.211Z" hostname="MacBookPro" time="0.026">
+  <properties/>
+  <testcase name="clearAll_removesAllCachedFiles" classname="io.squarescreen.cache.file.MediaFileCacheTest" time="0.017"/>
+  <testcase name="differentUrlsProduceDifferentFiles" classname="io.squarescreen.cache.file.MediaFileCacheTest" time="0.003"/>
+  <testcase name="getFile_returnsNull_whenNotCached" classname="io.squarescreen.cache.file.MediaFileCacheTest" time="0.0"/>
+  <testcase name="sameUrlProducesSameFile" classname="io.squarescreen.cache.file.MediaFileCacheTest" time="0.001"/>
+  <testcase name="saveAndGetFile_returnsCachedFile" classname="io.squarescreen.cache.file.MediaFileCacheTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

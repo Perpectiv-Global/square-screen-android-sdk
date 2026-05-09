@@ -1,0 +1,7 @@
+io.squarescreen.core.squarescreen-core-pngs-0 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-core/build/generated/res/pngs/release
+io.squarescreen.core.squarescreen-core-resValues-1 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-core/build/generated/res/resValues/release
+io.squarescreen.core.squarescreen-core-mergeReleaseResources-2 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-core/build/intermediates/incremental/release/mergeReleaseResources/merged.dir
+io.squarescreen.core.squarescreen-core-mergeReleaseResources-3 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-core/build/intermediates/incremental/release/mergeReleaseResources/stripped.dir
+io.squarescreen.core.squarescreen-core-release-4 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-core/build/intermediates/merged_res/release/mergeReleaseResources
+io.squarescreen.core.squarescreen-core-main-5 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-core/src/main/res
+io.squarescreen.core.squarescreen-core-release-6 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-core/src/release/res

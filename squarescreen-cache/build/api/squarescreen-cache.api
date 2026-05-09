@@ -1,0 +1,36 @@
+public final class io/squarescreen/cache/CacheProviderFactory {
+	public static final field INSTANCE Lio/squarescreen/cache/CacheProviderFactory;
+	public final fun create (Landroid/content/Context;Lio/squarescreen/core/config/SquareScreenConfig;)Lio/squarescreen/core/cache/CacheProvider;
+}
+
+public final class io/squarescreen/cache/DefaultCacheProvider : io/squarescreen/core/cache/CacheProvider {
+	public fun <init> (Landroid/content/Context;J)V
+	public synthetic fun <init> (Landroid/content/Context;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun clearAll (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getMediaFile (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getPlaylist (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun saveMediaFile (Ljava/lang/String;Ljava/io/File;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun savePlaylist (Lio/squarescreen/core/model/Playlist;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/squarescreen/cache/db/SquareScreenDatabase_Impl {
+	public fun <init> ()V
+	public fun clearAllTables ()V
+	public fun getAutoMigrations (Ljava/util/Map;)Ljava/util/List;
+	public fun getRequiredAutoMigrationSpecs ()Ljava/util/Set;
+	public fun playlistDao ()Lio/squarescreen/cache/db/dao/PlaylistDao;
+}
+
+public final class io/squarescreen/cache/db/dao/PlaylistDao_Impl : io/squarescreen/cache/db/dao/PlaylistDao {
+	public fun <init> (Landroidx/room/RoomDatabase;)V
+	public fun clearAll (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun deleteAllItems (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun deletePlaylist (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getPlaylist (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getPlaylistItems (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun getRequiredConverters ()Ljava/util/List;
+	public fun replacePlaylist (Lio/squarescreen/cache/db/entity/PlaylistEntity;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun upsertItems (Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun upsertPlaylist (Lio/squarescreen/cache/db/entity/PlaylistEntity;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+

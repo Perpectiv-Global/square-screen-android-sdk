@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.binary.compatibility.validator)
     alias(libs.plugins.maven.publish) apply false
+    alias(libs.plugins.dokka) apply false
 }
 
 apiValidation {

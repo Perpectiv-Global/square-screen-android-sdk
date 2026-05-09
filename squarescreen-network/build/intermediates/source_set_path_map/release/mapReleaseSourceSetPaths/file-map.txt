@@ -1,0 +1,8 @@
+io.squarescreen.network.squarescreen-network-release-0 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-core/build/intermediates/packaged_res/release/packageReleaseResources
+io.squarescreen.network.squarescreen-network-pngs-1 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-network/build/generated/res/pngs/release
+io.squarescreen.network.squarescreen-network-resValues-2 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-network/build/generated/res/resValues/release
+io.squarescreen.network.squarescreen-network-mergeReleaseResources-3 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-network/build/intermediates/incremental/release/mergeReleaseResources/merged.dir
+io.squarescreen.network.squarescreen-network-mergeReleaseResources-4 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-network/build/intermediates/incremental/release/mergeReleaseResources/stripped.dir
+io.squarescreen.network.squarescreen-network-release-5 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-network/build/intermediates/merged_res/release/mergeReleaseResources
+io.squarescreen.network.squarescreen-network-main-6 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-network/src/main/res
+io.squarescreen.network.squarescreen-network-release-7 /Users/fitzgeraldafful/Developer/square-screen-android-sdk/squarescreen-network/src/release/res
