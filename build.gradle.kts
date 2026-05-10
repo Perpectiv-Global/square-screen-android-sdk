@@ -32,12 +32,15 @@ subprojects {
             }
 
         // Dokka crashes with "PermittedSubclasses requires ASM9" when reading sealed
-        // class bytecode from dependency JARs compiled with Java 17. Fix: sever the
-        // dependency between the javadoc Jar task and the Dokka generation task so
-        // the jar runs with no inputs and produces an empty (but valid) javadoc jar.
-        // Maven Central accepts empty javadoc jars for Android/Kotlin libraries.
-        tasks.matching { it.name == "javaDocReleaseJar" }.configureEach {
-            setDependsOn(listOf<Any>())
+        // class bytecode from dependency JARs compiled with Java 17. Fix: replace
+        // the Dokka generation task's actions with a no-op that only creates the
+        // expected output directory (empty). javaDocReleaseJar then packages the
+        // empty directory into a valid (empty) javadoc jar for Maven Central.
+        tasks.matching { it.name == "javaDocReleaseGeneration" }.configureEach {
+            actions.clear()
+            doLast {
+                outputs.files.forEach { file -> if (!file.exists()) file.mkdirs() }
+            }
         }
         }
     }
