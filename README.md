@@ -2,7 +2,7 @@
 
 Device-side player SDK for DOOH (Digital Out-of-Home) digital signage on Android.
 
-The SDK handles everything below the display layer: playlist fetching, media caching, heartbeat reporting, emergency broadcast overrides, and remote device commands — so your app only needs to render what it receives.
+The SDK handles everything below the display layer: device pairing, playlist fetching, media caching, heartbeat reporting, emergency broadcast overrides, and remote device commands — so your app only needs to render what it receives.
 
 ---
 
@@ -10,7 +10,7 @@ The SDK handles everything below the display layer: playlist fetching, media cac
 
 | Artifact | What it does |
 |---|---|
-| `squarescreen-player` | Core engine — flows, background workers, foreground service |
+| `squarescreen-player` | Core engine — pairing, flows, background workers, foreground service |
 | `squarescreen-ui` | Jetpack Compose player and emergency overlay *(optional)* |
 | `squarescreen-core` | Shared models and contracts *(transitive)* |
 | `squarescreen-network` | Retrofit network layer *(transitive)* |
@@ -25,10 +25,10 @@ Add to your module's `build.gradle.kts`:
 ```kotlin
 dependencies {
     // Core player (required)
-    implementation("io.squarescreen:squarescreen-player:0.1.0")
+    implementation("io.squarescreen:squarescreen-player:0.1.2")
 
     // Jetpack Compose UI components (optional)
-    implementation("io.squarescreen:squarescreen-ui:0.1.0")
+    implementation("io.squarescreen:squarescreen-ui:0.1.2")
 }
 ```
 
@@ -36,9 +36,64 @@ Minimum SDK: **API 29 (Android 10)**
 
 ---
 
+## Device pairing
+
+Before calling `SquareScreen.init()`, a device must be paired with a SquareScreen workspace. Pairing is a two-step admin-confirm flow:
+
+1. An admin pre-registers the device in the SquareScreen dashboard using its Android ID.
+2. The SDK calls the register endpoint with that ID and polls for admin approval.
+3. On approval, the SDK receives a `deviceId` and `deviceToken` — store them securely and pass them to `SquareScreen.init()`.
+
+### Usage
+
+```kotlin
+val androidId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+val pairing = SquareScreenPairing.create(
+    context = applicationContext,
+    osIdentifier = androidId,
+    logger = if (BuildConfig.DEBUG) SquareScreenDebugLogger() else null
+)
+
+pairing.pairingStatus.collect { status ->
+    when (status) {
+        is PairingStatus.Approved -> {
+            // Store securely — token is issued exactly once
+            credentialStore.save(status.deviceId, status.deviceToken)
+            initializeSdk(status.deviceId, status.deviceToken)
+        }
+        PairingStatus.Pending        -> showAwaitingApprovalUI()
+        PairingStatus.DeviceNotFound -> showDeviceNotFoundUI(androidId)
+        PairingStatus.AlreadyPaired  -> initializeFromStoredCredentials()
+        PairingStatus.Expired        -> showExpiredUI()
+        PairingStatus.InvalidToken   -> showInvalidTokenUI()
+        is PairingStatus.Error       -> showGenericError(status.throwable)
+    }
+}
+```
+
+### How it works
+
+- On first launch (no stored token): calls `register`, persists the returned pairing token, then begins polling `pair-status`.
+- On subsequent launches (stored token): skips `register` and goes straight to polling.
+- Polls with exponential backoff: 5 s × 3 attempts → 10 s × 3 → 30 s indefinitely.
+- The pairing token is automatically cleared on `Approved`, `Expired`, and `InvalidToken`.
+- Call `pairing.cancel()` when the pairing screen is destroyed.
+
+### Manual status check
+
+```kotlin
+// One-shot check outside the automatic polling cycle
+val status = pairing.checkPairStatus()
+```
+
+> **Tip:** `DeviceNotFound` means the admin hasn't pre-registered this device yet.
+> Show the Android ID on screen so the admin can copy it into the dashboard.
+
+---
+
 ## Quick start
 
-### 1. Initialize in `Application.onCreate()`
+Once the device is paired and credentials are stored, initialize the SDK once in `Application.onCreate()`:
 
 ```kotlin
 class MyApplication : Application() {
@@ -61,10 +116,10 @@ class MyApplication : Application() {
 }
 ```
 
-> **Security:** never hardcode `deviceToken`. Store it in `EncryptedSharedPreferences`
-> and retrieve it after the device pairing flow.
+> **Security:** never hardcode `deviceId` or `deviceToken`. Store them in
+> `EncryptedSharedPreferences` after the pairing flow completes.
 
-### 2. Drop in the Compose player
+### Drop in the Compose player
 
 ```kotlin
 @Composable
@@ -129,9 +184,9 @@ squareScreen.emergencyAlert.collect { alert ->
 // Device connectivity and sync state
 squareScreen.deviceStatus.collect { status ->
     when (status) {
-        DeviceStatus.ONLINE    -> hideOfflineBadge()
-        DeviceStatus.OFFLINE   -> showOfflineBadge()
-        DeviceStatus.SYNCING   -> showSpinner()
+        DeviceStatus.ONLINE     -> hideOfflineBadge()
+        DeviceStatus.OFFLINE    -> showOfflineBadge()
+        DeviceStatus.SYNCING    -> showSpinner()
         DeviceStatus.CONNECTING -> Unit
     }
 }
@@ -162,6 +217,12 @@ val job = squareScreen.nowPlayingCallback(
 // Cancel when done
 job.cancel()
 ```
+
+### Heartbeat
+
+The SDK sends device health metrics (CPU usage, memory, disk, temperature) to the server at the configured `heartbeatIntervalSeconds` interval. This runs as a coroutine loop inside the foreground service — not WorkManager — so the configured interval is respected exactly without the 15-minute WorkManager floor.
+
+CPU usage is measured at the process level via `/proc/self/stat` (system-wide `/proc/stat` is restricted on API 26+). Temperature reporting is best-effort and varies by manufacturer; the SDK always sends `null` rather than throw if unavailable.
 
 ### Emergency alerts
 
@@ -196,13 +257,60 @@ SquareScreenPlayerView(
 
 ---
 
+## Caching
+
+The SDK caches both playlist metadata and media files so content continues to play when the device is offline.
+
+### How it works
+
+| Layer | Storage | What's cached |
+|---|---|---|
+| Metadata | Room database (`squarescreen.db`) | Playlist and playlist item records |
+| Media files | `external files dir / squarescreen_media` | Images and video, keyed by SHA-256 hash of URL |
+
+- **TTL:** A cached playlist is considered fresh for `cacheTtlSeconds` (default 3600 s / 1 hour). After expiry the SDK fetches a fresh copy on the next request.
+- **Offline fallback:** If the network fetch fails and a cached playlist exists (even expired), the SDK serves it and emits `DeviceStatus.OFFLINE`.
+- **Deduplication:** Media files are stored under a SHA-256 hash of the source URL, so the same file is never downloaded twice even if it appears in multiple playlists.
+- **Storage permissions:** The media cache directory lives in the app's private external storage (`context.getExternalFilesDir()`). No `READ_EXTERNAL_STORAGE` or `WRITE_EXTERNAL_STORAGE` permission is required on API 29+.
+
+### Custom cache
+
+Implement `CacheProvider` to plug in your own storage backend:
+
+```kotlin
+class MyCustomCacheProvider : CacheProvider {
+    override suspend fun getPlaylist(): Playlist? { ... }
+    override suspend fun savePlaylist(playlist: Playlist) { ... }
+    override suspend fun getMediaFile(url: String): File? { ... }
+    override suspend fun saveMediaFile(url: String, file: File) { ... }
+    override suspend fun clearAll() { ... }
+}
+
+SquareScreenConfig(
+    ...
+    cacheProvider = MyCustomCacheProvider()
+)
+```
+
+---
+
+## Background work
+
+| Task | Mechanism | Interval | Notes |
+|---|---|---|---|
+| Heartbeat | Foreground service coroutine loop | `heartbeatIntervalSeconds` (default 60 s) | Exact interval — not subject to WorkManager's 15-min floor |
+| Emergency poll | WorkManager `PeriodicWorkRequest` | `emergencyPollIntervalSeconds` (default 30 s) | Survives process death |
+| Command poll | WorkManager `PeriodicWorkRequest` | 30 s | Survives process death |
+
+---
+
 ## Using the player without Compose UI
 
 The `squarescreen-player` module has no UI dependency. Use it headlessly — collect `nowPlaying` and render however you like:
 
 ```kotlin
 // Add only the player, skip the UI module
-implementation("io.squarescreen:squarescreen-player:0.1.0")
+implementation("io.squarescreen:squarescreen-player:0.1.2")
 ```
 
 ```kotlin
@@ -210,19 +318,6 @@ squareScreen.nowPlaying.collect { result ->
     val playlist = result.getOrNull() ?: return@collect
     myCustomRenderer.show(playlist.items)
 }
-```
-
----
-
-## Custom cache or network
-
-Provide your own implementation of `CacheProvider` or `NetworkDataSource` in `SquareScreenConfig`:
-
-```kotlin
-SquareScreenConfig(
-    ...
-    cacheProvider = MyCustomCacheProvider()
-)
 ```
 
 ---
