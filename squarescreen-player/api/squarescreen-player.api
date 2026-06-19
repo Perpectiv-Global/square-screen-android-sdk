@@ -21,6 +21,19 @@ public final class io/squarescreen/player/SquareScreen$Companion {
 	public final fun init (Landroid/content/Context;Lio/squarescreen/core/config/SquareScreenConfig;)V
 }
 
+public final class io/squarescreen/player/SquareScreenPairing {
+	public static final field Companion Lio/squarescreen/player/SquareScreenPairing$Companion;
+	public synthetic fun <init> (Ljava/lang/String;Lio/squarescreen/network/PairingNetworkClient;Lio/squarescreen/player/internal/PairingTokenStore;Lio/squarescreen/core/logging/SquareScreenLogger;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun cancel ()V
+	public final fun checkPairStatus (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getPairingStatus ()Lkotlinx/coroutines/flow/Flow;
+}
+
+public final class io/squarescreen/player/SquareScreenPairing$Companion {
+	public final fun create (Landroid/content/Context;Ljava/lang/String;Lio/squarescreen/core/logging/SquareScreenLogger;)Lio/squarescreen/player/SquareScreenPairing;
+	public static synthetic fun create$default (Lio/squarescreen/player/SquareScreenPairing$Companion;Landroid/content/Context;Ljava/lang/String;Lio/squarescreen/core/logging/SquareScreenLogger;ILjava/lang/Object;)Lio/squarescreen/player/SquareScreenPairing;
+}
+
 public final class io/squarescreen/player/service/SquareScreenPlayerService : android/app/Service {
 	public fun <init> ()V
 	public fun onBind (Landroid/content/Intent;)Landroid/os/IBinder;
