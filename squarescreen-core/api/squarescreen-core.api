@@ -240,6 +240,81 @@ public final class io/squarescreen/core/model/MediaType$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class io/squarescreen/core/model/PairingRegistration {
+	public fun <init> (Ljava/lang/String;I)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()I
+	public final fun copy (Ljava/lang/String;I)Lio/squarescreen/core/model/PairingRegistration;
+	public static synthetic fun copy$default (Lio/squarescreen/core/model/PairingRegistration;Ljava/lang/String;IILjava/lang/Object;)Lio/squarescreen/core/model/PairingRegistration;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getExpiresIn ()I
+	public final fun getPairingToken ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract class io/squarescreen/core/model/PairingStatus {
+}
+
+public final class io/squarescreen/core/model/PairingStatus$AlreadyPaired : io/squarescreen/core/model/PairingStatus {
+	public static final field INSTANCE Lio/squarescreen/core/model/PairingStatus$AlreadyPaired;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/squarescreen/core/model/PairingStatus$Approved : io/squarescreen/core/model/PairingStatus {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/squarescreen/core/model/PairingStatus$Approved;
+	public static synthetic fun copy$default (Lio/squarescreen/core/model/PairingStatus$Approved;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/squarescreen/core/model/PairingStatus$Approved;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDeviceId ()Ljava/lang/String;
+	public final fun getDeviceToken ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/squarescreen/core/model/PairingStatus$DeviceNotFound : io/squarescreen/core/model/PairingStatus {
+	public static final field INSTANCE Lio/squarescreen/core/model/PairingStatus$DeviceNotFound;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/squarescreen/core/model/PairingStatus$Error : io/squarescreen/core/model/PairingStatus {
+	public fun <init> (Ljava/lang/Throwable;)V
+	public final fun component1 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/Throwable;)Lio/squarescreen/core/model/PairingStatus$Error;
+	public static synthetic fun copy$default (Lio/squarescreen/core/model/PairingStatus$Error;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/squarescreen/core/model/PairingStatus$Error;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getThrowable ()Ljava/lang/Throwable;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/squarescreen/core/model/PairingStatus$Expired : io/squarescreen/core/model/PairingStatus {
+	public static final field INSTANCE Lio/squarescreen/core/model/PairingStatus$Expired;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/squarescreen/core/model/PairingStatus$InvalidToken : io/squarescreen/core/model/PairingStatus {
+	public static final field INSTANCE Lio/squarescreen/core/model/PairingStatus$InvalidToken;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/squarescreen/core/model/PairingStatus$Pending : io/squarescreen/core/model/PairingStatus {
+	public static final field INSTANCE Lio/squarescreen/core/model/PairingStatus$Pending;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class io/squarescreen/core/model/PlaybackReport {
 	public static final field Companion Lio/squarescreen/core/model/PlaybackReport$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZ)V
