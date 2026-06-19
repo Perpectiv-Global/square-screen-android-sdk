@@ -186,7 +186,6 @@ class SquareScreen private constructor(
             SquareScreenServiceLocator.nowPlayingState.value = result
         }
 
-        workScheduler.scheduleHeartbeat(config.heartbeatIntervalSeconds)
         workScheduler.scheduleEmergencyPoll(config.emergencyPollIntervalSeconds)
         workScheduler.scheduleCommandPoll()
 

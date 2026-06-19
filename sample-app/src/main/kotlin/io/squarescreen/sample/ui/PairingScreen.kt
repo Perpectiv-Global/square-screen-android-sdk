@@ -1,10 +1,15 @@
 package io.squarescreen.sample.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.provider.Settings
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -42,16 +48,13 @@ import kotlinx.coroutines.launch
 /**
  * Pairing screen shown on first launch when no device credentials are stored.
  *
- * Flow:
- *  1. Reads Android ID as the stable OS identifier.
- *  2. Creates a [SquareScreenPairing] session and starts observing [SquareScreenPairing.pairingStatus].
- *  3. SDK calls POST /screen/register — shows a spinner while this completes.
- *  4. On pending: shows an "Awaiting admin approval" state with a manual "Check now" button.
- *  5. On approved: extracts credentials and calls [onPaired] — SDK init happens in MainActivity.
- *  6. On terminal errors: shows an appropriate message and a "Try again" button that restarts the flow.
+ * On launch it immediately fires the register call to detect the device's state:
+ *  - If the device is registered in the dashboard → goes straight to "Awaiting approval".
+ *  - If the device is not yet registered (404) → shows the identifier so the admin
+ *    can add it, then lets the user retry.
+ *  - If already paired (409) → shows an appropriate message.
  *
  * @param onPaired Called with [DeviceCredentials] once the device is approved.
- *   The caller is responsible for persisting credentials and initializing the SDK.
  */
 @Composable
 fun PairingScreen(onPaired: (DeviceCredentials) -> Unit) {
@@ -62,171 +65,232 @@ fun PairingScreen(onPaired: (DeviceCredentials) -> Unit) {
         Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
     }
 
-    // Restart key — incrementing this resets the pairing session for retry flows.
-    var sessionKey by remember { mutableStateOf(0) }
+    // Session is created immediately on launch — auto-checks whether the device is
+    // already registered so we skip the pre-pairing screen when it is.
+    //
+    // We read the state value into a local val so DisposableEffect closes over the
+    // instance (not the state). Without this, onDispose reads the *new* session from
+    // the state and cancels it before its register call fires.
+    val sessionState = remember { mutableStateOf(SquareScreenPairing.create(context, osIdentifier)) }
+    val session = sessionState.value
 
-    val pairingSession = remember(sessionKey) {
-        SquareScreenPairing.create(osIdentifier)
+    DisposableEffect(session) {
+        onDispose { session.cancel() }
     }
 
-    DisposableEffect(pairingSession) {
-        onDispose { pairingSession.cancel() }
-    }
+    val status by session.pairingStatus.collectAsState(initial = null)
 
-    val pairingStatus by pairingSession.pairingStatus.collectAsState(initial = null)
-
-    // Navigate automatically when approved.
-    LaunchedEffect(pairingStatus) {
-        val status = pairingStatus
-        if (status is PairingStatus.Approved) {
-            onPaired(DeviceCredentials(status.deviceId, status.deviceToken))
+    LaunchedEffect(status) {
+        val s = status
+        if (s is PairingStatus.Approved) {
+            onPaired(DeviceCredentials(s.deviceId, s.deviceToken))
         }
     }
 
-    Box(
+    val restartSession = { sessionState.value = SquareScreenPairing.create(context, osIdentifier) }
+
+    PairingScaffold {
+        when (val s = status) {
+            // Register call in-flight — brief check on launch.
+            null -> {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(32.dp), strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Checking...", color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp)
+            }
+
+            // Device not yet in the dashboard — show identifier so admin can add it,
+            // then the user taps "Pair this device" to retry.
+            PairingStatus.DeviceNotFound -> {
+                NotRegisteredContent(
+                    osIdentifier = osIdentifier,
+                    onRetry = restartSession
+                )
+            }
+
+            // Device is registered and we're waiting for admin approval.
+            PairingStatus.Pending -> {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(32.dp), strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Awaiting admin approval",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Ask your workspace admin to approve this device in the dashboard.",
+                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            val result = session.checkPairStatus()
+                            if (result is PairingStatus.Approved) {
+                                onPaired(DeviceCredentials(result.deviceId, result.deviceToken))
+                            }
+                        }
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                ) {
+                    Text("Check now", color = Color.White, fontSize = 15.sp)
+                }
+            }
+
+            // Brief transition state while MainActivity switches to PlayerScreen.
+            is PairingStatus.Approved -> {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(32.dp), strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Device approved — launching player...",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            PairingStatus.AlreadyPaired -> PairingErrorContent(
+                title = "Device already paired",
+                message = "This device is registered but credentials are missing locally. Contact your admin to re-issue credentials.",
+                onRetry = null
+            )
+
+            PairingStatus.Expired -> PairingErrorContent(
+                title = "Pairing window expired",
+                message = "The 10-minute approval window closed before an admin responded. Tap below to restart.",
+                onRetry = restartSession
+            )
+
+            PairingStatus.InvalidToken -> PairingErrorContent(
+                title = "Invalid pairing token",
+                message = "The pairing session is no longer valid. Tap below to restart.",
+                onRetry = restartSession
+            )
+
+            is PairingStatus.Error -> PairingErrorContent(
+                title = "Something went wrong",
+                message = s.throwable.message ?: "An unexpected error occurred.",
+                onRetry = restartSession
+            )
+        }
+    }
+}
+
+/** Shown when the server returns 404 — device hasn't been added to the dashboard yet. */
+@Composable
+private fun NotRegisteredContent(
+    osIdentifier: String,
+    onRetry: () -> Unit
+) {
+    val context = LocalContext.current
+    var copied by remember { mutableStateOf(false) }
+    var isPairing by remember { mutableStateOf(false) }
+
+    Text(
+        "Add this device to your dashboard",
+        color = Color.White,
+        fontSize = 16.sp,
+        fontWeight = FontWeight.Medium,
+        textAlign = TextAlign.Center
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    Text(
+        "Enter the identifier below in your SquareScreen dashboard, then tap Pair.",
+        color = Color.White.copy(alpha = 0.5f),
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center
+    )
+
+    Spacer(modifier = Modifier.height(20.dp))
+
+    Row(
         modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black),
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = osIdentifier,
+            color = Color.White,
+            fontSize = 13.sp,
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier.weight(1f)
+        )
+        OutlinedButton(
+            onClick = {
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("Device identifier", osIdentifier))
+                copied = true
+            },
+            shape = RoundedCornerShape(6.dp),
+            modifier = Modifier.padding(start = 12.dp)
+        ) {
+            Text(
+                text = if (copied) "Copied" else "Copy",
+                color = if (copied) Color(0xFF34C759) else Color.White,
+                fontSize = 13.sp
+            )
+        }
+    }
+
+    Spacer(modifier = Modifier.height(32.dp))
+
+    Button(
+        onClick = {
+            isPairing = true
+            onRetry()
+        },
+        enabled = !isPairing,
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+        modifier = Modifier.fillMaxWidth().height(52.dp)
+    ) {
+        if (isPairing) {
+            CircularProgressIndicator(
+                color = Color.Black,
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text("Pair this device", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
+private fun PairingScaffold(content: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 48.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = "SquareScreen",
-                color = Color.White,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold
-            )
-
+            Text("SquareScreen", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
-                text = "Pair this device to your workspace",
+                "Pair this device to your workspace",
                 color = Color.White.copy(alpha = 0.6f),
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center
             )
-
             Spacer(modifier = Modifier.height(48.dp))
-
-            when (val status = pairingStatus) {
-                null -> {
-                    // Registering — waiting for the register call to complete.
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(32.dp),
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Connecting...",
-                        color = Color.White.copy(alpha = 0.6f),
-                        fontSize = 14.sp
-                    )
-                }
-
-                PairingStatus.Pending -> {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(32.dp),
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Awaiting admin approval",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Ask your workspace admin to approve this device in the dashboard.",
-                        color = Color.White.copy(alpha = 0.5f),
-                        fontSize = 13.sp,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    OutlinedButton(
-                        onClick = {
-                            scope.launch {
-                                val result = pairingSession.checkPairStatus()
-                                if (result is PairingStatus.Approved) {
-                                    onPaired(DeviceCredentials(result.deviceId, result.deviceToken))
-                                }
-                            }
-                        },
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth().height(48.dp)
-                    ) {
-                        Text("Check now", color = Color.White, fontSize = 15.sp)
-                    }
-                }
-
-                is PairingStatus.Approved -> {
-                    // Handled by LaunchedEffect — show a brief confirmation while navigating.
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(32.dp),
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Device approved — launching player...",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                PairingStatus.AlreadyPaired -> {
-                    PairingErrorContent(
-                        title = "Device already paired",
-                        message = "This device is registered but credentials are missing locally. " +
-                            "Contact your admin to re-issue credentials.",
-                        onRetry = null
-                    )
-                }
-
-                PairingStatus.DeviceNotFound -> {
-                    PairingErrorContent(
-                        title = "Device not registered",
-                        message = "No device with this identifier was found. " +
-                            "Ask your admin to add this device in the SquareScreen dashboard.",
-                        onRetry = { sessionKey++ }
-                    )
-                }
-
-                PairingStatus.Expired -> {
-                    PairingErrorContent(
-                        title = "Pairing window expired",
-                        message = "The 10-minute approval window closed before an admin responded. " +
-                            "Tap below to restart.",
-                        onRetry = { sessionKey++ }
-                    )
-                }
-
-                PairingStatus.InvalidToken -> {
-                    PairingErrorContent(
-                        title = "Invalid pairing token",
-                        message = "The pairing session is no longer valid. Tap below to restart.",
-                        onRetry = { sessionKey++ }
-                    )
-                }
-
-                is PairingStatus.Error -> {
-                    PairingErrorContent(
-                        title = "Something went wrong",
-                        message = status.throwable.message ?: "An unexpected error occurred.",
-                        onRetry = { sessionKey++ }
-                    )
-                }
-            }
+            content()
         }
     }
 }
@@ -237,20 +301,9 @@ private fun PairingErrorContent(
     message: String,
     onRetry: (() -> Unit)?
 ) {
-    Text(
-        text = title,
-        color = Color(0xFFFF3B30),
-        fontSize = 18.sp,
-        fontWeight = FontWeight.SemiBold,
-        textAlign = TextAlign.Center
-    )
+    Text(title, color = Color(0xFFFF3B30), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
     Spacer(modifier = Modifier.height(12.dp))
-    Text(
-        text = message,
-        color = Color.White.copy(alpha = 0.6f),
-        fontSize = 14.sp,
-        textAlign = TextAlign.Center
-    )
+    Text(message, color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp, textAlign = TextAlign.Center)
     if (onRetry != null) {
         Spacer(modifier = Modifier.height(32.dp))
         Button(

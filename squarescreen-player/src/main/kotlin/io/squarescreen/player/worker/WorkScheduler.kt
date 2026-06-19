@@ -17,21 +17,6 @@ internal class WorkScheduler(private val context: Context) {
 
     private val workManager = WorkManager.getInstance(context)
 
-    fun scheduleHeartbeat(intervalSeconds: Long) {
-        val request = PeriodicWorkRequestBuilder<HeartbeatWorker>(
-            repeatInterval = intervalSeconds,
-            repeatIntervalTimeUnit = TimeUnit.SECONDS
-        )
-            .addTag(HEARTBEAT_WORK_TAG)
-            .build()
-
-        workManager.enqueueUniquePeriodicWork(
-            HEARTBEAT_WORK_TAG,
-            ExistingPeriodicWorkPolicy.UPDATE,
-            request
-        )
-    }
-
     fun scheduleEmergencyPoll(intervalSeconds: Long) {
         val request = PeriodicWorkRequestBuilder<EmergencyPollWorker>(
             repeatInterval = intervalSeconds,
@@ -63,7 +48,6 @@ internal class WorkScheduler(private val context: Context) {
     }
 
     fun cancelAll() {
-        workManager.cancelAllWorkByTag(HEARTBEAT_WORK_TAG)
         workManager.cancelAllWorkByTag(EMERGENCY_POLL_WORK_TAG)
         workManager.cancelAllWorkByTag(COMMAND_POLL_WORK_TAG)
     }

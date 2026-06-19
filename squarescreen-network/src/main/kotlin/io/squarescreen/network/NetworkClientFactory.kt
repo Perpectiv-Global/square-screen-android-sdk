@@ -4,6 +4,7 @@ import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFact
 import io.squarescreen.core.config.SquareScreenConfig
 import io.squarescreen.core.datasource.NetworkDataSource
 import io.squarescreen.network.api.SquareScreenApiService
+import io.squarescreen.network.interceptor.DemoBypassInterceptor
 import io.squarescreen.network.interceptor.DeviceAuthInterceptor
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -33,6 +34,7 @@ object NetworkClientFactory {
 
     private fun buildOkHttpClient(config: SquareScreenConfig): OkHttpClient {
         return OkHttpClient.Builder()
+            .addInterceptor(DemoBypassInterceptor())
             .addInterceptor(DeviceAuthInterceptor(config.deviceId, config.deviceToken))
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)

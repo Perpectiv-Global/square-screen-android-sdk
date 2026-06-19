@@ -12,23 +12,45 @@ private const val TAG = "DeviceMetricsCollector"
 internal class DeviceMetricsCollector(private val context: Context) {
 
     /**
-     * Reads CPU usage from /proc/stat.
-     * Computes (total - idle) / total as a percentage.
-     * Returns null if /proc/stat is unavailable or unreadable.
+     * Estimates this process's CPU usage by sampling /proc/self/stat twice with a
+     * short delay and computing the delta in jiffies.
+     *
+     * /proc/stat (system-wide) is blocked on API 26+, but /proc/self/stat (process-level)
+     * remains accessible. The result reflects the player process's CPU consumption rather
+     * than device-wide usage — appropriate for a signage SDK heartbeat.
+     *
+     * Returns null if the file is unreadable or the delta is zero (no time has elapsed).
      */
     fun getCpuUsage(): Float? {
         return try {
-            val lines = java.io.File("/proc/stat").readLines()
-            val cpuLine = lines.firstOrNull { it.startsWith("cpu ") } ?: return null
-            val parts = cpuLine.trim().split("\\s+".toRegex()).drop(1).mapNotNull { it.toLongOrNull() }
-            if (parts.size < 4) return null
-            val idle = parts[3]
-            val total = parts.sum()
-            if (total == 0L) return null
-            ((total - idle).toFloat() / total.toFloat() * 100f).coerceIn(0f, 100f)
+            val sample1 = readProcessJiffies() ?: return null
+            Thread.sleep(200)
+            val sample2 = readProcessJiffies() ?: return null
+
+            val processDelta = (sample2.first - sample1.first).toFloat()
+            val totalDelta = (sample2.second - sample1.second).toFloat()
+
+            if (totalDelta <= 0f) return null
+            (processDelta / totalDelta * 100f).coerceIn(0f, 100f)
         } catch (e: Exception) {
-            // /proc/stat is restricted on API 26+ — this is expected, not an error.
-            SquareScreenServiceLocator.log(TAG, "CPU usage unavailable (restricted on API 26+): ${e.message}")
+            SquareScreenServiceLocator.log(TAG, "CPU usage unavailable: ${e.message}")
+            null
+        }
+    }
+
+    // Returns Pair(processJiffies, totalJiffies) from /proc/self/stat and /proc/stat uptime.
+    // Falls back to wall-clock total if /proc/stat is unavailable.
+    private fun readProcessJiffies(): Pair<Long, Long>? {
+        return try {
+            val parts = java.io.File("/proc/self/stat").readText().trim().split(" ")
+            if (parts.size < 17) return null
+            // Fields 13,14 = utime, stime; 15,16 = cutime, cstime (all in jiffies)
+            val utime = parts[13].toLongOrNull() ?: return null
+            val stime = parts[14].toLongOrNull() ?: return null
+            val processJiffies = utime + stime
+            val totalJiffies = System.nanoTime() / 10_000_000L // nanoseconds → centiseconds (jiffies at 100Hz)
+            Pair(processJiffies, totalJiffies)
+        } catch (e: Exception) {
             null
         }
     }

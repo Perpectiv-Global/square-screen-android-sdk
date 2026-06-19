@@ -1,10 +1,12 @@
 package io.squarescreen.player
 
+import android.content.Context
 import io.squarescreen.core.logging.SquareScreenLogger
 import io.squarescreen.core.model.PairingStatus
 import io.squarescreen.core.result.SquareScreenError
 import io.squarescreen.core.result.SquareScreenResult
 import io.squarescreen.network.PairingNetworkClient
+import io.squarescreen.player.internal.PairingTokenStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,31 +23,35 @@ private const val TAG = "SquareScreenPairing"
 /**
  * Manages the device pairing flow before [SquareScreen.init] can be called.
  *
+ * On first collection of [pairingStatus]:
+ * - If a pairing token is stored from a previous session, skips register and goes
+ *   straight to polling `pair-status`.
+ * - Otherwise calls `register`, persists the returned token, then polls `pair-status`.
+ *
+ * The pairing token is cleared automatically on [PairingStatus.Approved],
+ * [PairingStatus.Expired], and [PairingStatus.InvalidToken].
+ *
  * Usage:
  * ```kotlin
- * val pairing = SquareScreenPairing.create(osIdentifier = androidId)
+ * val pairing = SquareScreenPairing.create(context, osIdentifier = androidId)
  *
- * // Automatic — observe status changes with backoff polling
  * pairing.pairingStatus.collect { status ->
  *     when (status) {
  *         is PairingStatus.Approved -> {
  *             credentialStore.save(status.deviceId, status.deviceToken)
  *             initializeSdk(status.deviceId, status.deviceToken)
  *         }
- *         PairingStatus.Pending      -> showAwaitingApprovalUI()
+ *         PairingStatus.Pending        -> showAwaitingApprovalUI()
  *         PairingStatus.DeviceNotFound -> showDeviceNotFoundError()
  *         PairingStatus.AlreadyPaired  -> showAlreadyPairedError()
- *         PairingStatus.Expired      -> showExpiredError()
- *         PairingStatus.InvalidToken -> showInvalidTokenError()
- *         is PairingStatus.Error     -> showGenericError(status.throwable)
+ *         PairingStatus.Expired        -> showExpiredError()
+ *         PairingStatus.InvalidToken   -> showInvalidTokenError()
+ *         is PairingStatus.Error       -> showGenericError(status.throwable)
  *     }
  * }
  *
- * // Manual — trigger an immediate check (e.g. from a "Check now" button)
- * val status = pairing.checkPairStatus()
- *
- * // Cancel when done (e.g. in onDestroy or DisposableEffect)
- * pairing.cancel()
+ * val status = pairing.checkPairStatus() // manual one-shot check
+ * pairing.cancel()                       // call in onDestroy / DisposableEffect
  * ```
  *
  * @param osIdentifier A stable device identifier pre-registered by an admin (e.g. Android ID).
@@ -53,6 +59,7 @@ private const val TAG = "SquareScreenPairing"
 class SquareScreenPairing private constructor(
     private val osIdentifier: String,
     private val networkClient: PairingNetworkClient,
+    private val tokenStore: PairingTokenStore,
     private val logger: SquareScreenLogger? = null
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -62,32 +69,37 @@ class SquareScreenPairing private constructor(
     /**
      * Flow of [PairingStatus] updates.
      *
-     * On first collection: calls `POST /screen/register`, then polls `GET /screen/pair-status`
-     * with exponential backoff (5 s × 3 → 10 s × 3 → 30 s thereafter).
-     * Terminates automatically on [PairingStatus.Approved], [PairingStatus.InvalidToken],
-     * [PairingStatus.Expired], [PairingStatus.DeviceNotFound], [PairingStatus.AlreadyPaired],
-     * or [PairingStatus.Error].
+     * On first collection:
+     * - Stored token found → skips register, polls pair-status immediately.
+     * - No stored token → calls register, stores token, then polls pair-status.
      *
-     * The last emitted value is replayed to new collectors via [shareIn].
+     * Polls with exponential backoff (5 s × 3 → 10 s × 3 → 30 s thereafter).
+     * Terminates automatically on any terminal [PairingStatus].
+     * The last emitted value is replayed to new collectors.
      */
     val pairingStatus: Flow<PairingStatus> = callbackFlow<PairingStatus> {
-        logger?.debug(TAG, "Registering device with identifier: $osIdentifier")
+        val storedToken = tokenStore.get()
 
-        when (val reg = networkClient.register(osIdentifier)) {
-            is SquareScreenResult.Error -> {
-                val status = reg.error.toPairingStatus()
-                logger?.debug(TAG, "Register failed: $status")
-                send(status)
-                close()
-                return@callbackFlow
-            }
-            is SquareScreenResult.Success -> {
-                currentPairingToken = reg.data.pairingToken
-                logger?.debug(
-                    TAG,
-                    "Registered — awaiting admin approval (token expires in ${reg.data.expiresIn}s)"
-                )
-                send(PairingStatus.Pending)
+        if (storedToken != null) {
+            logger?.debug(TAG, "Resuming pairing with stored token")
+            currentPairingToken = storedToken
+            send(PairingStatus.Pending)
+        } else {
+            logger?.debug(TAG, "Registering device with identifier: $osIdentifier")
+            when (val reg = networkClient.register(osIdentifier)) {
+                is SquareScreenResult.Error -> {
+                    val status = reg.error.toPairingStatus()
+                    logger?.debug(TAG, "Register failed: $status")
+                    send(status)
+                    close()
+                    return@callbackFlow
+                }
+                is SquareScreenResult.Success -> {
+                    currentPairingToken = reg.data.pairingToken
+                    tokenStore.save(reg.data.pairingToken)
+                    logger?.debug(TAG, "Registered — token stored (expires in ${reg.data.expiresIn}s)")
+                    send(PairingStatus.Pending)
+                }
             }
         }
 
@@ -96,15 +108,20 @@ class SquareScreenPairing private constructor(
             delay(backoffDelay(attempt))
             attempt++
             val token = currentPairingToken ?: break
-            logger?.debug(TAG, "Polling pair status (attempt $attempt, delay ${backoffDelay(attempt - 1)}ms)")
+            logger?.debug(TAG, "Polling pair status (attempt $attempt)")
             val status = networkClient.getPairStatus(token)
             send(status)
             when (status) {
                 is PairingStatus.Approved,
                 PairingStatus.InvalidToken,
-                PairingStatus.Expired,
+                PairingStatus.Expired -> {
+                    logger?.debug(TAG, "Pairing terminal: $status — clearing stored token")
+                    tokenStore.clear()
+                    close()
+                    return@callbackFlow
+                }
                 is PairingStatus.Error -> {
-                    logger?.debug(TAG, "Pairing terminal: $status")
+                    logger?.debug(TAG, "Pairing error: ${status.throwable.message}")
                     close()
                     return@callbackFlow
                 }
@@ -119,7 +136,7 @@ class SquareScreenPairing private constructor(
      * Performs a one-shot pair-status check outside the automatic polling cycle.
      *
      * Only valid after [pairingStatus] has been collected and the register call has completed.
-     * Returns [PairingStatus.Error] if called before an active pairing session exists.
+     * Returns [PairingStatus.Error] if there is no active pairing token.
      */
     suspend fun checkPairStatus(): PairingStatus {
         val token = currentPairingToken
@@ -130,14 +147,13 @@ class SquareScreenPairing private constructor(
     }
 
     /**
-     * Cancels the polling coroutine scope. Call this when the pairing screen is destroyed
-     * to avoid leaking the polling loop.
+     * Cancels the polling coroutine scope. Call this when the pairing screen is destroyed.
      */
     fun cancel() {
         scope.cancel()
     }
 
-    // Backoff schedule: attempts 0-2 → 5s, attempts 3-5 → 10s, attempts 6+ → 30s
+    // Backoff: attempts 0–2 → 5s, 3–5 → 10s, 6+ → 30s
     private fun backoffDelay(attempt: Int): Long = when {
         attempt < 3 -> 5_000L
         attempt < 6 -> 10_000L
@@ -146,18 +162,25 @@ class SquareScreenPairing private constructor(
 
     companion object {
         /**
-         * Creates a [SquareScreenPairing] instance for the given OS identifier.
+         * Creates a [SquareScreenPairing] instance.
          *
+         * @param context Application or Activity context used for persisting the pairing token.
          * @param osIdentifier Stable device identifier pre-registered by an admin.
          *   On Android, use `Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)`.
-         * @param logger Optional logger for debug output. Pass null (default) for silence.
+         * @param logger Optional logger for debug output. Null (default) = silent.
          */
         fun create(
+            context: Context,
             osIdentifier: String,
             logger: SquareScreenLogger? = null
         ): SquareScreenPairing {
             require(osIdentifier.isNotBlank()) { "osIdentifier must not be blank" }
-            return SquareScreenPairing(osIdentifier, PairingNetworkClient(), logger)
+            return SquareScreenPairing(
+                osIdentifier = osIdentifier,
+                networkClient = PairingNetworkClient(),
+                tokenStore = PairingTokenStore(context.applicationContext),
+                logger = logger
+            )
         }
     }
 }

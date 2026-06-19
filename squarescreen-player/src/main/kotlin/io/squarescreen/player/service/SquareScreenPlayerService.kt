@@ -6,21 +6,35 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
+import io.squarescreen.core.model.HeartbeatPayload
+import io.squarescreen.player.internal.DeviceMetricsCollector
+import io.squarescreen.player.internal.SDK_VERSION
 import io.squarescreen.player.internal.SquareScreenServiceLocator
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 internal const val NOTIFICATION_CHANNEL_ID = "squarescreen_player"
 internal const val NOTIFICATION_ID = 0x5351 // 'SQ' in hex
 
+private const val TAG = "SquareScreenPlayerService"
+
 /**
- * Foreground service that keeps the player process alive during continuous display operation.
+ * Foreground service that keeps the player process alive and drives the heartbeat loop.
  *
- * Started automatically by [io.squarescreen.player.SquareScreen.init] when a playlist is active.
+ * The heartbeat runs as a coroutine loop inside the service rather than WorkManager so
+ * it respects the configured interval without WorkManager's 15-minute minimum clamp.
+ *
+ * Started automatically by [io.squarescreen.player.SquareScreen.init].
  * Stopped cleanly by [io.squarescreen.player.SquareScreen.shutdown].
- *
- * Integrators do not interact with this service directly — they provide the notification
- * title and icon via [io.squarescreen.core.config.ForegroundNotificationConfig].
  */
 class SquareScreenPlayerService : Service() {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var heartbeatJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -29,14 +43,47 @@ class SquareScreenPlayerService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(NOTIFICATION_ID, buildNotification())
+        startHeartbeatLoop()
         return START_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        heartbeatJob?.cancel()
         stopForeground(STOP_FOREGROUND_REMOVE)
         super.onDestroy()
+    }
+
+    private fun startHeartbeatLoop() {
+        heartbeatJob?.cancel()
+        heartbeatJob = scope.launch {
+            val config = SquareScreenServiceLocator.config ?: return@launch
+            val intervalMs = config.heartbeatIntervalSeconds * 1_000L
+            val metrics = DeviceMetricsCollector(applicationContext)
+
+            while (true) {
+                sendHeartbeat(metrics)
+                delay(intervalMs)
+            }
+        }
+    }
+
+    private suspend fun sendHeartbeat(metrics: DeviceMetricsCollector) {
+        val network = SquareScreenServiceLocator.networkDataSource ?: return
+        val config = SquareScreenServiceLocator.config ?: return
+
+        val payload = HeartbeatPayload(
+            cpuUsage = metrics.getCpuUsage(),
+            memoryUsage = metrics.getMemoryUsage(),
+            diskUsage = metrics.getDiskUsage(),
+            temperature = metrics.getTemperature(),
+            osVersion = "Android ${android.os.Build.VERSION.RELEASE}",
+            playerVersion = SDK_VERSION
+        )
+
+        SquareScreenServiceLocator.log(TAG, "Posting heartbeat")
+        network.sendHeartbeat(payload)
     }
 
     private fun createNotificationChannel() {

@@ -6,6 +6,8 @@ import io.squarescreen.core.model.PairingStatus
 import io.squarescreen.core.result.SquareScreenError
 import io.squarescreen.core.result.SquareScreenResult
 import io.squarescreen.network.api.PairingApiService
+import io.squarescreen.network.interceptor.DemoBypassInterceptor
+import io.squarescreen.network.dto.PairStatusRequestDto
 import io.squarescreen.network.dto.RegisterRequestDto
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -30,6 +32,7 @@ class PairingNetworkClient {
     }
 
     private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(DemoBypassInterceptor())
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
@@ -86,8 +89,11 @@ class PairingNetworkClient {
      * [PairingStatus.Expired], or [PairingStatus.Error] for unexpected failures.
      */
     suspend fun getPairStatus(pairingToken: String): PairingStatus {
+        if (pairingToken.isBlank()) {
+            return PairingStatus.Error(IllegalStateException("Pairing token is missing — cannot check pair status"))
+        }
         return try {
-            val response = api.getPairStatus("Bearer $pairingToken")
+            val response = api.getPairStatus(PairStatusRequestDto(pairingToken))
             when {
                 response.isSuccessful -> {
                     val body = response.body()

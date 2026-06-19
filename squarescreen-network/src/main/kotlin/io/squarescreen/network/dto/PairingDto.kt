@@ -16,6 +16,11 @@ internal data class RegisterResponseDto(
 )
 
 @Serializable
+internal data class PairStatusRequestDto(
+    @SerialName("pairing_token") val pairingToken: String
+)
+
+@Serializable
 internal data class PairStatusResponseDto(
     val status: String,
     @SerialName("device_id") val deviceId: String? = null,
