@@ -11,3 +11,9 @@ public final class io/squarescreen/network/NetworkClientFactory {
 	public final fun create (Lio/squarescreen/core/config/SquareScreenConfig;)Lio/squarescreen/core/datasource/NetworkDataSource;
 }
 
+public final class io/squarescreen/network/PairingNetworkClient {
+	public fun <init> ()V
+	public final fun getPairStatus (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun register (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
