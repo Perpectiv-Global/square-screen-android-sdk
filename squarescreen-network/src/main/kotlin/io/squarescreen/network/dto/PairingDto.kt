@@ -9,6 +9,12 @@ internal data class RegisterRequestDto(
 )
 
 @Serializable
+internal data class ActivateRequestDto(
+    @SerialName("device_id") val deviceId: String,
+    @SerialName("device_token") val deviceToken: String
+)
+
+@Serializable
 internal data class RegisterResponseDto(
     @SerialName("pairing_token") val pairingToken: String,
     @SerialName("expires_in") val expiresIn: Int,

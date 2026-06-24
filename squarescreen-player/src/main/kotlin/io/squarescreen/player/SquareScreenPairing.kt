@@ -23,41 +23,35 @@ private const val TAG = "SquareScreenPairing"
 /**
  * Manages the device pairing flow before [SquareScreen.init] can be called.
  *
- * On first collection of [pairingStatus]:
- * - If a pairing token is stored from a previous session, skips register and goes
- *   straight to polling `pair-status`.
- * - Otherwise calls `register`, persists the returned token, then polls `pair-status`.
+ * Two factory methods cover the two registration paths:
+ * - [create] — register path: SDK sends an OS identifier; admin confirms in the dashboard.
+ * - [createWithActivation] — activate path: developer supplies a SquareScreen device ID
+ *   (8-character alphanumeric) and their own device token (IMEI, UUID, etc.).
  *
- * The pairing token is cleared automatically on [PairingStatus.Approved],
- * [PairingStatus.Expired], and [PairingStatus.InvalidToken].
+ * Both paths converge at the same `pair-status` polling loop and emit the same
+ * [PairingStatus] states.
  *
- * Usage:
+ * If a pairing token from a previous session is stored, both paths skip their
+ * registration call and go straight to polling.
+ *
+ * Usage (register path):
  * ```kotlin
  * val pairing = SquareScreenPairing.create(context, osIdentifier = androidId)
- *
- * pairing.pairingStatus.collect { status ->
- *     when (status) {
- *         is PairingStatus.Approved -> {
- *             credentialStore.save(status.deviceId, status.deviceToken)
- *             initializeSdk(status.deviceId, status.deviceToken)
- *         }
- *         PairingStatus.Pending        -> showAwaitingApprovalUI()
- *         PairingStatus.DeviceNotFound -> showDeviceNotFoundError()
- *         PairingStatus.AlreadyPaired  -> showAlreadyPairedError()
- *         PairingStatus.Expired        -> showExpiredError()
- *         PairingStatus.InvalidToken   -> showInvalidTokenError()
- *         is PairingStatus.Error       -> showGenericError(status.throwable)
- *     }
- * }
- *
- * val status = pairing.checkPairStatus() // manual one-shot check
- * pairing.cancel()                       // call in onDestroy / DisposableEffect
+ * pairing.pairingStatus.collect { status -> ... }
  * ```
  *
- * @param osIdentifier A stable device identifier pre-registered by an admin (e.g. Android ID).
+ * Usage (activate path):
+ * ```kotlin
+ * val pairing = SquareScreenPairing.createWithActivation(
+ *     context = context,
+ *     deviceId = "AB12CD34",
+ *     deviceToken = telephonyManager.imei ?: uuid
+ * )
+ * pairing.pairingStatus.collect { status -> ... }
+ * ```
  */
 class SquareScreenPairing private constructor(
-    private val osIdentifier: String,
+    private val registrationMode: RegistrationMode,
     private val networkClient: PairingNetworkClient,
     private val tokenStore: PairingTokenStore,
     private val logger: SquareScreenLogger? = null
@@ -66,12 +60,18 @@ class SquareScreenPairing private constructor(
 
     @Volatile private var currentPairingToken: String? = null
 
+    internal sealed class RegistrationMode {
+        data class Register(val osIdentifier: String) : RegistrationMode()
+        data class Activate(val deviceId: String, val deviceToken: String) : RegistrationMode()
+    }
+
     /**
      * Flow of [PairingStatus] updates.
      *
      * On first collection:
-     * - Stored token found → skips register, polls pair-status immediately.
-     * - No stored token → calls register, stores token, then polls pair-status.
+     * - Stored token found → skips registration, polls pair-status immediately.
+     * - No stored token → calls register or activate (depending on factory used),
+     *   stores the returned token, then polls pair-status.
      *
      * Polls with exponential backoff (5 s × 3 → 10 s × 3 → 30 s thereafter).
      * Terminates automatically on any terminal [PairingStatus].
@@ -85,19 +85,29 @@ class SquareScreenPairing private constructor(
             currentPairingToken = storedToken
             send(PairingStatus.Pending)
         } else {
-            logger?.debug(TAG, "Registering device with identifier: $osIdentifier")
-            when (val reg = networkClient.register(osIdentifier)) {
+            val result = when (val mode = registrationMode) {
+                is RegistrationMode.Register -> {
+                    logger?.debug(TAG, "Registering device: ${mode.osIdentifier}")
+                    networkClient.register(mode.osIdentifier)
+                }
+                is RegistrationMode.Activate -> {
+                    logger?.debug(TAG, "Activating device: ${mode.deviceId}")
+                    networkClient.activate(mode.deviceId, mode.deviceToken)
+                }
+            }
+
+            when (result) {
                 is SquareScreenResult.Error -> {
-                    val status = reg.error.toPairingStatus()
-                    logger?.debug(TAG, "Register failed: $status")
+                    val status = result.error.toPairingStatus()
+                    logger?.debug(TAG, "Registration failed: $status")
                     send(status)
                     close()
                     return@callbackFlow
                 }
                 is SquareScreenResult.Success -> {
-                    currentPairingToken = reg.data.pairingToken
-                    tokenStore.save(reg.data.pairingToken)
-                    logger?.debug(TAG, "Registered — token stored (expires in ${reg.data.expiresIn}s)")
+                    currentPairingToken = result.data.pairingToken
+                    tokenStore.save(result.data.pairingToken)
+                    logger?.debug(TAG, "Token stored (expires in ${result.data.expiresIn}s)")
                     send(PairingStatus.Pending)
                 }
             }
@@ -135,7 +145,7 @@ class SquareScreenPairing private constructor(
     /**
      * Performs a one-shot pair-status check outside the automatic polling cycle.
      *
-     * Only valid after [pairingStatus] has been collected and the register call has completed.
+     * Only valid after [pairingStatus] has been collected and registration has completed.
      * Returns [PairingStatus.Error] if there is no active pairing token.
      */
     suspend fun checkPairStatus(): PairingStatus {
@@ -162,9 +172,10 @@ class SquareScreenPairing private constructor(
 
     companion object {
         /**
-         * Creates a [SquareScreenPairing] instance.
+         * Register path: the SDK sends [osIdentifier] to the server and waits for an
+         * admin to confirm the device in the SquareScreen dashboard.
          *
-         * @param context Application or Activity context used for persisting the pairing token.
+         * @param context Application or Activity context (used for token persistence).
          * @param osIdentifier Stable device identifier pre-registered by an admin.
          *   On Android, use `Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)`.
          * @param logger Optional logger for debug output. Null (default) = silent.
@@ -176,7 +187,35 @@ class SquareScreenPairing private constructor(
         ): SquareScreenPairing {
             require(osIdentifier.isNotBlank()) { "osIdentifier must not be blank" }
             return SquareScreenPairing(
-                osIdentifier = osIdentifier,
+                registrationMode = RegistrationMode.Register(osIdentifier),
+                networkClient = PairingNetworkClient(),
+                tokenStore = PairingTokenStore(context.applicationContext),
+                logger = logger
+            )
+        }
+
+        /**
+         * Activate path: the developer supplies a SquareScreen [deviceId] (8-character
+         * alphanumeric string issued by SquareScreen) and their own [deviceToken]
+         * (IMEI, UUID, or any stable identifier they choose).
+         *
+         * The flow then polls `pair-status` identically to the register path.
+         *
+         * @param context Application or Activity context (used for token persistence).
+         * @param deviceId 8-character alphanumeric SquareScreen device ID.
+         * @param deviceToken Developer-chosen device token (e.g. IMEI, installation UUID).
+         * @param logger Optional logger for debug output. Null (default) = silent.
+         */
+        fun createWithActivation(
+            context: Context,
+            deviceId: String,
+            deviceToken: String,
+            logger: SquareScreenLogger? = null
+        ): SquareScreenPairing {
+            require(deviceId.isNotBlank()) { "deviceId must not be blank" }
+            require(deviceToken.isNotBlank()) { "deviceToken must not be blank" }
+            return SquareScreenPairing(
+                registrationMode = RegistrationMode.Activate(deviceId, deviceToken),
                 networkClient = PairingNetworkClient(),
                 tokenStore = PairingTokenStore(context.applicationContext),
                 logger = logger

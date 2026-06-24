@@ -1,5 +1,6 @@
 package io.squarescreen.network.api
 
+import io.squarescreen.network.dto.ActivateRequestDto
 import io.squarescreen.network.dto.PairStatusRequestDto
 import io.squarescreen.network.dto.PairStatusResponseDto
 import io.squarescreen.network.dto.RegisterRequestDto
@@ -13,6 +14,11 @@ internal interface PairingApiService {
     @POST("screen/register")
     suspend fun register(
         @Body body: RegisterRequestDto
+    ): Response<RegisterResponseDto>
+
+    @POST("screen/activate")
+    suspend fun activate(
+        @Body body: ActivateRequestDto
     ): Response<RegisterResponseDto>
 
     @POST("screen/pair-status")

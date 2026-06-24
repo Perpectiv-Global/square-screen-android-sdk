@@ -7,6 +7,7 @@ import io.squarescreen.core.result.SquareScreenError
 import io.squarescreen.core.result.SquareScreenResult
 import io.squarescreen.network.api.PairingApiService
 import io.squarescreen.network.interceptor.DemoBypassInterceptor
+import io.squarescreen.network.dto.ActivateRequestDto
 import io.squarescreen.network.dto.PairStatusRequestDto
 import io.squarescreen.network.dto.RegisterRequestDto
 import kotlinx.serialization.json.Json
@@ -60,6 +61,43 @@ class PairingNetworkClient {
                     val body = response.body()
                         ?: return SquareScreenResult.Error(
                             SquareScreenError.ParseError("Register response body was null")
+                        )
+                    SquareScreenResult.Success(
+                        PairingRegistration(
+                            pairingToken = body.pairingToken,
+                            expiresIn = body.expiresIn
+                        )
+                    )
+                }
+                response.code() == 404 ->
+                    SquareScreenResult.Error(SquareScreenError.NetworkError(404, "DEVICE_NOT_FOUND"))
+                response.code() == 409 ->
+                    SquareScreenResult.Error(SquareScreenError.NetworkError(409, "ALREADY_PAIRED"))
+                else ->
+                    SquareScreenResult.Error(
+                        SquareScreenError.NetworkError(response.code(), response.message())
+                    )
+            }
+        } catch (e: Exception) {
+            SquareScreenResult.Error(SquareScreenError.Unknown(e))
+        }
+    }
+
+    /**
+     * Calls `POST /screen/activate` with the developer-supplied device ID and token.
+     *
+     * An alternative to [register] for integrators who already hold a SquareScreen device ID
+     * (8-character alphanumeric) and supply their own device token (IMEI, UUID, etc.).
+     * Returns the same [PairingRegistration] as [register] on success.
+     */
+    suspend fun activate(deviceId: String, deviceToken: String): SquareScreenResult<PairingRegistration> {
+        return try {
+            val response = api.activate(ActivateRequestDto(deviceId, deviceToken))
+            when {
+                response.isSuccessful -> {
+                    val body = response.body()
+                        ?: return SquareScreenResult.Error(
+                            SquareScreenError.ParseError("Activate response body was null")
                         )
                     SquareScreenResult.Success(
                         PairingRegistration(
