@@ -38,13 +38,13 @@ Minimum SDK: **API 29 (Android 10)**
 
 ## Device pairing
 
-Before calling `SquareScreen.init()`, a device must be paired with a SquareScreen workspace. Pairing is a two-step admin-confirm flow:
+Before calling `SquareScreen.init()`, a device must be paired with a SquareScreen workspace. There are two pairing paths — choose whichever fits your setup.
+
+### Path 1 — Register (admin confirms by OS identifier)
 
 1. An admin pre-registers the device in the SquareScreen dashboard using its Android ID.
 2. The SDK calls the register endpoint with that ID and polls for admin approval.
 3. On approval, the SDK receives a `deviceId` and `deviceToken` — store them securely and pass them to `SquareScreen.init()`.
-
-### Usage
 
 ```kotlin
 val androidId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
@@ -63,6 +63,38 @@ pairing.pairingStatus.collect { status ->
         }
         PairingStatus.Pending        -> showAwaitingApprovalUI()
         PairingStatus.DeviceNotFound -> showDeviceNotFoundUI(androidId)
+        PairingStatus.AlreadyPaired  -> initializeFromStoredCredentials()
+        PairingStatus.Expired        -> showExpiredUI()
+        PairingStatus.InvalidToken   -> showInvalidTokenUI()
+        is PairingStatus.Error       -> showGenericError(status.throwable)
+    }
+}
+```
+
+### Path 2 — Activate (developer-supplied credentials)
+
+Use this when an admin has already created a device in the SquareScreen dashboard and given you its device ID. You supply that ID alongside your own device token — the token can be anything stable (IMEI, installation UUID, etc.), it is your choice.
+
+1. Admin creates the device in the SquareScreen dashboard — this generates the `deviceId`.
+2. The SDK calls the activate endpoint with that `deviceId` and your chosen `deviceToken`, then polls for admin approval exactly like Path 1.
+3. On approval, call `SquareScreen.init()` with the same `deviceId` and `deviceToken`.
+
+```kotlin
+val pairing = SquareScreenPairing.createWithActivation(
+    context = applicationContext,
+    deviceId = "AB12CD34",           // created in the SquareScreen admin dashboard
+    deviceToken = telephonyManager.imei ?: myInstallationUuid,
+    logger = if (BuildConfig.DEBUG) SquareScreenDebugLogger() else null
+)
+
+pairing.pairingStatus.collect { status ->
+    when (status) {
+        is PairingStatus.Approved -> {
+            credentialStore.save(status.deviceId, status.deviceToken)
+            initializeSdk(status.deviceId, status.deviceToken)
+        }
+        PairingStatus.Pending        -> showAwaitingApprovalUI()
+        PairingStatus.DeviceNotFound -> showDeviceNotFoundUI()
         PairingStatus.AlreadyPaired  -> initializeFromStoredCredentials()
         PairingStatus.Expired        -> showExpiredUI()
         PairingStatus.InvalidToken   -> showInvalidTokenUI()

@@ -26,7 +26,7 @@ private const val TAG = "SquareScreenPairing"
  * Two factory methods cover the two registration paths:
  * - [create] — register path: SDK sends an OS identifier; admin confirms in the dashboard.
  * - [createWithActivation] — activate path: developer supplies a SquareScreen device ID
- *   (8-character alphanumeric) and their own device token (IMEI, UUID, etc.).
+ *   (created in the admin dashboard) and their own device token (IMEI, UUID, etc.).
  *
  * Both paths converge at the same `pair-status` polling loop and emit the same
  * [PairingStatus] states.
@@ -195,14 +195,14 @@ class SquareScreenPairing private constructor(
         }
 
         /**
-         * Activate path: the developer supplies a SquareScreen [deviceId] (8-character
-         * alphanumeric string issued by SquareScreen) and their own [deviceToken]
-         * (IMEI, UUID, or any stable identifier they choose).
+         * Activate path: the developer supplies a SquareScreen [deviceId] (created in the
+         * admin dashboard) and their own [deviceToken] (IMEI, UUID, or any stable identifier
+         * they choose).
          *
          * The flow then polls `pair-status` identically to the register path.
          *
          * @param context Application or Activity context (used for token persistence).
-         * @param deviceId 8-character alphanumeric SquareScreen device ID.
+         * @param deviceId SquareScreen device ID created in the admin dashboard.
          * @param deviceToken Developer-chosen device token (e.g. IMEI, installation UUID).
          * @param logger Optional logger for debug output. Null (default) = silent.
          */

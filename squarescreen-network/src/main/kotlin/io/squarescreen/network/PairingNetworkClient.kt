@@ -87,7 +87,7 @@ class PairingNetworkClient {
      * Calls `POST /screen/activate` with the developer-supplied device ID and token.
      *
      * An alternative to [register] for integrators who already hold a SquareScreen device ID
-     * (8-character alphanumeric) and supply their own device token (IMEI, UUID, etc.).
+     * (created in the admin dashboard) and supply their own device token (IMEI, UUID, etc.).
      * Returns the same [PairingRegistration] as [register] on success.
      */
     suspend fun activate(deviceId: String, deviceToken: String): SquareScreenResult<PairingRegistration> {
