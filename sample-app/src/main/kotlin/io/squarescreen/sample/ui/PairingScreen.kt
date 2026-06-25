@@ -219,6 +219,13 @@ private fun RegisterContent(
             message = s.throwable.message ?: "An unexpected error occurred.",
             onRetry = onRetry
         )
+
+        // Not emitted by the register path — treat as unexpected error
+        PairingStatus.IdentifierMismatch -> PairingErrorContent(
+            title = "Something went wrong",
+            message = "An unexpected error occurred.",
+            onRetry = onRetry
+        )
     }
 }
 
@@ -320,6 +327,12 @@ private fun ActivateContent(
             title = "Device already paired",
             message = "This device is already paired. Contact your admin if you need to re-pair.",
             onRetry = null
+        )
+
+        PairingStatus.IdentifierMismatch -> PairingErrorContent(
+            title = "Identifier mismatch",
+            message = "This device ID is bound to a different token. Contact your admin to re-issue the device ID.",
+            onRetry = onRetry
         )
 
         PairingStatus.Expired -> PairingErrorContent(

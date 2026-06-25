@@ -301,6 +301,13 @@ public final class io/squarescreen/core/model/PairingStatus$Expired : io/squares
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class io/squarescreen/core/model/PairingStatus$IdentifierMismatch : io/squarescreen/core/model/PairingStatus {
+	public static final field INSTANCE Lio/squarescreen/core/model/PairingStatus$IdentifierMismatch;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class io/squarescreen/core/model/PairingStatus$InvalidToken : io/squarescreen/core/model/PairingStatus {
 	public static final field INSTANCE Lio/squarescreen/core/model/PairingStatus$InvalidToken;
 	public fun equals (Ljava/lang/Object;)Z

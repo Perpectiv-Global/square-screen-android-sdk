@@ -8,6 +8,7 @@ import io.squarescreen.core.result.SquareScreenResult
 import io.squarescreen.network.api.PairingApiService
 import io.squarescreen.network.interceptor.DemoBypassInterceptor
 import io.squarescreen.network.dto.ActivateRequestDto
+import io.squarescreen.network.dto.PairingErrorDto
 import io.squarescreen.network.dto.PairStatusRequestDto
 import io.squarescreen.network.dto.RegisterRequestDto
 import kotlinx.serialization.json.Json
@@ -86,42 +87,46 @@ class PairingNetworkClient {
     /**
      * Calls `POST /screen/activate` with the developer-supplied device ID and token.
      *
-     * An alternative to [register] for integrators who already hold a SquareScreen device ID
-     * (created in the admin dashboard) and supply their own device token (IMEI, UUID, etc.).
-     * Returns the same [PairingRegistration] as [register] on success.
+     * Unlike [register], activate resolves immediately — the server returns the permanent
+     * device token on 200 with no pair-status polling required.
+     *
+     * Returns [PairingStatus.Approved] on success, or the appropriate terminal
+     * [PairingStatus] on failure:
+     * - [PairingStatus.InvalidToken] — device ID is invalid or expired (401)
+     * - [PairingStatus.AlreadyPaired] — device is already paired (409 ALREADY_PAIRED)
+     * - [PairingStatus.IdentifierMismatch] — device ID is bound to a different token (409 IDENTIFIER_MISMATCH)
      */
-    suspend fun activate(deviceId: String, deviceToken: String): SquareScreenResult<PairingRegistration> {
+    suspend fun activate(deviceId: String, deviceToken: String): PairingStatus {
         return try {
             val response = api.activate(ActivateRequestDto(deviceId, deviceToken))
             when {
                 response.isSuccessful -> {
                     val body = response.body()
-                        ?: return SquareScreenResult.Error(
-                            SquareScreenError.ParseError("Activate response body was null")
+                        ?: return PairingStatus.Error(
+                            IllegalStateException("Activate response body was null")
                         )
-                    SquareScreenResult.Success(
-                        PairingRegistration(
-                            pairingToken = body.pairingToken,
-                            expiresIn = body.expiresIn
-                        )
-                    )
+                    PairingStatus.Approved(deviceId, body.deviceToken)
                 }
-                response.code() == 404 ->
-                    SquareScreenResult.Error(SquareScreenError.NetworkError(404, "DEVICE_NOT_FOUND"))
-                response.code() == 409 ->
-                    SquareScreenResult.Error(SquareScreenError.NetworkError(409, "ALREADY_PAIRED"))
-                else ->
-                    SquareScreenResult.Error(
-                        SquareScreenError.NetworkError(response.code(), response.message())
-                    )
+                response.code() == 401 -> PairingStatus.InvalidToken
+                response.code() == 409 -> {
+                    val errorCode = parseErrorCode(response.errorBody()?.string())
+                    when (errorCode) {
+                        "ALREADY_PAIRED" -> PairingStatus.AlreadyPaired
+                        "IDENTIFIER_MISMATCH" -> PairingStatus.IdentifierMismatch
+                        else -> PairingStatus.Error(Exception("409: $errorCode"))
+                    }
+                }
+                else -> PairingStatus.Error(
+                    Exception("Unexpected HTTP ${response.code()}: ${response.message()}")
+                )
             }
         } catch (e: Exception) {
-            SquareScreenResult.Error(SquareScreenError.Unknown(e))
+            PairingStatus.Error(e)
         }
     }
 
     /**
-     * Calls `GET /screen/pair-status` using the pairing token from [register].
+     * Calls `POST /screen/pair-status` using the pairing token from [register].
      *
      * Returns [PairingStatus.Pending], [PairingStatus.Approved], [PairingStatus.InvalidToken],
      * [PairingStatus.Expired], or [PairingStatus.Error] for unexpected failures.
@@ -141,15 +146,15 @@ class PairingNetworkClient {
                     when (body.status) {
                         "pending" -> PairingStatus.Pending
                         "approved" -> {
-                            val deviceId = body.deviceId
+                            val id = body.deviceId
                                 ?: return PairingStatus.Error(
                                     IllegalStateException("Approved response missing device_id")
                                 )
-                            val deviceToken = body.deviceToken
+                            val token = body.deviceToken
                                 ?: return PairingStatus.Error(
                                     IllegalStateException("Approved response missing device_token")
                                 )
-                            PairingStatus.Approved(deviceId, deviceToken)
+                            PairingStatus.Approved(id, token)
                         }
                         else -> PairingStatus.Error(
                             IllegalStateException("Unknown pair-status value: '${body.status}'")
@@ -164,6 +169,15 @@ class PairingNetworkClient {
             }
         } catch (e: Exception) {
             PairingStatus.Error(e)
+        }
+    }
+
+    private fun parseErrorCode(errorBody: String?): String? {
+        if (errorBody == null) return null
+        return try {
+            json.decodeFromString<PairingErrorDto>(errorBody).code
+        } catch (e: Exception) {
+            null
         }
     }
 }

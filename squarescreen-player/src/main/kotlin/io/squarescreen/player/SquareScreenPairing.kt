@@ -78,68 +78,73 @@ class SquareScreenPairing private constructor(
      * The last emitted value is replayed to new collectors.
      */
     val pairingStatus: Flow<PairingStatus> = callbackFlow<PairingStatus> {
-        val storedToken = tokenStore.get()
+        when (val mode = registrationMode) {
 
-        if (storedToken != null) {
-            logger?.debug(TAG, "Resuming pairing with stored token")
-            currentPairingToken = storedToken
-            send(PairingStatus.Pending)
-        } else {
-            val result = when (val mode = registrationMode) {
-                is RegistrationMode.Register -> {
-                    logger?.debug(TAG, "Registering device: ${mode.osIdentifier}")
-                    networkClient.register(mode.osIdentifier)
-                }
-                is RegistrationMode.Activate -> {
-                    logger?.debug(TAG, "Activating device: ${mode.deviceId}")
-                    networkClient.activate(mode.deviceId, mode.deviceToken)
-                }
+            // Activate path — resolves in a single network call, no polling.
+            is RegistrationMode.Activate -> {
+                logger?.debug(TAG, "Activating device: ${mode.deviceId}")
+                val status = networkClient.activate(mode.deviceId, mode.deviceToken)
+                logger?.debug(TAG, "Activate result: $status")
+                send(status)
+                close()
             }
 
-            when (result) {
-                is SquareScreenResult.Error -> {
-                    val status = result.error.toPairingStatus()
-                    logger?.debug(TAG, "Registration failed: $status")
-                    send(status)
-                    close()
-                    return@callbackFlow
-                }
-                is SquareScreenResult.Success -> {
-                    currentPairingToken = result.data.pairingToken
-                    tokenStore.save(result.data.pairingToken)
-                    logger?.debug(TAG, "Token stored (expires in ${result.data.expiresIn}s)")
+            // Register path — gets a short-lived pairing token then polls pair-status.
+            is RegistrationMode.Register -> {
+                val storedToken = tokenStore.get()
+
+                if (storedToken != null) {
+                    logger?.debug(TAG, "Resuming pairing with stored token")
+                    currentPairingToken = storedToken
                     send(PairingStatus.Pending)
+                } else {
+                    logger?.debug(TAG, "Registering device: ${mode.osIdentifier}")
+                    when (val reg = networkClient.register(mode.osIdentifier)) {
+                        is SquareScreenResult.Error -> {
+                            val status = reg.error.toPairingStatus()
+                            logger?.debug(TAG, "Register failed: $status")
+                            send(status)
+                            close()
+                            return@callbackFlow
+                        }
+                        is SquareScreenResult.Success -> {
+                            currentPairingToken = reg.data.pairingToken
+                            tokenStore.save(reg.data.pairingToken)
+                            logger?.debug(TAG, "Token stored (expires in ${reg.data.expiresIn}s)")
+                            send(PairingStatus.Pending)
+                        }
+                    }
                 }
+
+                var attempt = 0
+                while (true) {
+                    delay(backoffDelay(attempt))
+                    attempt++
+                    val token = currentPairingToken ?: break
+                    logger?.debug(TAG, "Polling pair status (attempt $attempt)")
+                    val status = networkClient.getPairStatus(token)
+                    send(status)
+                    when (status) {
+                        is PairingStatus.Approved,
+                        PairingStatus.InvalidToken,
+                        PairingStatus.Expired -> {
+                            logger?.debug(TAG, "Pairing terminal: $status — clearing stored token")
+                            tokenStore.clear()
+                            close()
+                            return@callbackFlow
+                        }
+                        is PairingStatus.Error -> {
+                            logger?.debug(TAG, "Pairing error: ${status.throwable.message}")
+                            close()
+                            return@callbackFlow
+                        }
+                        else -> {}
+                    }
+                }
+
+                awaitClose()
             }
         }
-
-        var attempt = 0
-        while (true) {
-            delay(backoffDelay(attempt))
-            attempt++
-            val token = currentPairingToken ?: break
-            logger?.debug(TAG, "Polling pair status (attempt $attempt)")
-            val status = networkClient.getPairStatus(token)
-            send(status)
-            when (status) {
-                is PairingStatus.Approved,
-                PairingStatus.InvalidToken,
-                PairingStatus.Expired -> {
-                    logger?.debug(TAG, "Pairing terminal: $status — clearing stored token")
-                    tokenStore.clear()
-                    close()
-                    return@callbackFlow
-                }
-                is PairingStatus.Error -> {
-                    logger?.debug(TAG, "Pairing error: ${status.throwable.message}")
-                    close()
-                    return@callbackFlow
-                }
-                else -> {}
-            }
-        }
-
-        awaitClose()
     }.shareIn(scope, SharingStarted.Lazily, replay = 1)
 
     /**

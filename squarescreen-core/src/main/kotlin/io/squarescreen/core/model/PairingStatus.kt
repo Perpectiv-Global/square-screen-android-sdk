@@ -46,6 +46,13 @@ sealed class PairingStatus {
      */
     data object AlreadyPaired : PairingStatus()
 
+    /**
+     * The device ID was activated with a different device token than the one supplied.
+     * Only emitted by the activate path ([io.squarescreen.player.SquareScreenPairing.createWithActivation]).
+     * Contact your admin to re-issue the device ID with the correct token.
+     */
+    data object IdentifierMismatch : PairingStatus()
+
     /** An unexpected error occurred. Inspect [throwable] for details. */
     data class Error(val throwable: Throwable) : PairingStatus()
 }
