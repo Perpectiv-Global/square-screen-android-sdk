@@ -68,6 +68,7 @@ fun PairingScreen(onPaired: (DeviceCredentials) -> Unit) {
     // See DisposableEffect comment below for why we read into a local val.
     val registerSessionState = remember { mutableStateOf(SquareScreenPairing.create(context, androidId)) }
     val registerSession = registerSessionState.value
+    var registerAutoRetriedAlreadyPaired by remember { mutableStateOf(false) }
 
     DisposableEffect(registerSession) {
         onDispose { registerSession.cancel() }
@@ -76,17 +77,27 @@ fun PairingScreen(onPaired: (DeviceCredentials) -> Unit) {
     val registerStatus by registerSession.pairingStatus.collectAsState(initial = null)
 
     LaunchedEffect(registerStatus) {
-        val s = registerStatus
-        if (s is PairingStatus.Approved) onPaired(DeviceCredentials(s.deviceId, s.deviceToken))
+        when (val s = registerStatus) {
+            is PairingStatus.Approved -> onPaired(DeviceCredentials(s.deviceId, s.deviceToken))
+            // On first 409, restart the session — it will find any stored pairing token
+            // and go straight to pair-status polling to retrieve existing credentials.
+            PairingStatus.AlreadyPaired -> if (!registerAutoRetriedAlreadyPaired) {
+                registerAutoRetriedAlreadyPaired = true
+                registerSessionState.value = SquareScreenPairing.create(context, androidId)
+            }
+            else -> {}
+        }
     }
 
     val restartRegisterSession = {
+        registerAutoRetriedAlreadyPaired = false
         registerSessionState.value = SquareScreenPairing.create(context, androidId)
     }
 
     // Activate path — session only created when user submits a deviceId.
     val activateSessionState = remember { mutableStateOf<SquareScreenPairing?>(null) }
     val activateSession = activateSessionState.value
+    var activateAutoRetriedAlreadyPaired by remember { mutableStateOf(false) }
 
     DisposableEffect(activateSession) {
         onDispose { activateSession?.cancel() }
@@ -96,8 +107,17 @@ fun PairingScreen(onPaired: (DeviceCredentials) -> Unit) {
         .collectAsState(initial = null)
 
     LaunchedEffect(activateStatus) {
-        val s = activateStatus
-        if (s is PairingStatus.Approved) onPaired(DeviceCredentials(s.deviceId, s.deviceToken))
+        when (val s = activateStatus) {
+            is PairingStatus.Approved -> onPaired(DeviceCredentials(s.deviceId, s.deviceToken))
+            // On first 409, switch to the register path session so we can pick up any
+            // stored pairing token and call pair-status to retrieve existing credentials.
+            PairingStatus.AlreadyPaired -> if (!activateAutoRetriedAlreadyPaired) {
+                activateAutoRetriedAlreadyPaired = true
+                registerSessionState.value = SquareScreenPairing.create(context, androidId)
+                mode = PairingMode.REGISTER
+            }
+            else -> {}
+        }
     }
 
     PairingScaffold {
