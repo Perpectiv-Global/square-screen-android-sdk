@@ -25,10 +25,10 @@ Add to your module's `build.gradle.kts`:
 ```kotlin
 dependencies {
     // Core player (required)
-    implementation("io.squarescreen:squarescreen-player:0.1.2")
+    implementation("io.squarescreen:squarescreen-player:0.1.3")
 
     // Jetpack Compose UI components (optional)
-    implementation("io.squarescreen:squarescreen-ui:0.1.2")
+    implementation("io.squarescreen:squarescreen-ui:0.1.3")
 }
 ```
 
@@ -342,7 +342,7 @@ The `squarescreen-player` module has no UI dependency. Use it headlessly — col
 
 ```kotlin
 // Add only the player, skip the UI module
-implementation("io.squarescreen:squarescreen-player:0.1.2")
+implementation("io.squarescreen:squarescreen-player:0.1.3")
 ```
 
 ```kotlin
