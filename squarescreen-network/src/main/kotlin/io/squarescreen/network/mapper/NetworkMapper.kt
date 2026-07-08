@@ -20,11 +20,14 @@ import io.squarescreen.network.dto.PlaylistItemDto
 internal object NetworkMapper {
 
     fun mapNowPlaying(dto: NowPlayingResponseDto, cachedAt: Long): Playlist {
+        val playlistInfo = dto.playlist?.let { PlaylistInfo(it.id, it.uuid, it.name) }
+            ?: dto.items.firstNotNullOfOrNull { it.playlistUuid }
+                ?.let { PlaylistInfo(id = null, uuid = it, name = "") }
         return Playlist(
             items = dto.items.map { mapPlaylistItem(it) },
             strategy = dto.strategy?.let { mapStrategy(it) },
             schedule = dto.schedule?.let { ScheduleInfo(it.uuid, it.name, it.priority) },
-            playlist = dto.playlist?.let { PlaylistInfo(it.id, it.uuid, it.name) },
+            playlist = playlistInfo,
             cachedAt = cachedAt
         )
     }
