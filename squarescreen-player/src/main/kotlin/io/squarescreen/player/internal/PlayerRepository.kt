@@ -30,14 +30,6 @@ internal class PlayerRepository(
         quality: String? = null,
         limit: Int? = null
     ): SquareScreenResult<Playlist> {
-        val cached = cache.getPlaylist()
-        if (cached != null) {
-            SquareScreenServiceLocator.log(TAG, "Serving playlist from cache (${cached.items.size} items)")
-            lastKnownPlaylist = cached
-            SquareScreenServiceLocator.deviceStatusState.value = DeviceStatus.ONLINE
-            return SquareScreenResult.Success(cached)
-        }
-
         SquareScreenServiceLocator.deviceStatusState.value = DeviceStatus.SYNCING
         val result = network.fetchNowPlaying(type, category, quality, limit)
 
@@ -46,14 +38,15 @@ internal class PlayerRepository(
                 cache.savePlaylist(result.data)
                 lastKnownPlaylist = result.data
                 SquareScreenServiceLocator.deviceStatusState.value = DeviceStatus.ONLINE
-                SquareScreenServiceLocator.log(TAG, "Playlist fetched from network (${result.data.items} items)")
+                SquareScreenServiceLocator.log(TAG, "Playlist fetched from network (${result.data.items.size} items)")
                 result
             }
             is SquareScreenResult.Error -> {
                 SquareScreenServiceLocator.logError(TAG, "Network fetch failed: ${result.error}")
-                val fallback = lastKnownPlaylist
+                val fallback = lastKnownPlaylist ?: cache.getPlaylist()
                 if (fallback != null) {
-                    SquareScreenServiceLocator.log(TAG, "Serving stale in-memory playlist as offline fallback")
+                    lastKnownPlaylist = fallback
+                    SquareScreenServiceLocator.log(TAG, "Serving cached playlist as offline fallback (${fallback.items.size} items)")
                     SquareScreenServiceLocator.deviceStatusState.value = DeviceStatus.OFFLINE
                     SquareScreenResult.Success(fallback)
                 } else {
