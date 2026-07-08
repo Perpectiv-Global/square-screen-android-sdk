@@ -7,6 +7,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import android.util.Log
 import io.squarescreen.core.model.PlaybackReport
 import io.squarescreen.core.result.SquareScreenResult
 import io.squarescreen.player.SquareScreen
@@ -55,6 +56,7 @@ fun SquareScreenDisplay(
             modifier = Modifier.fillMaxSize(),
             onItemCompleted = { item, startedAt, endedAt ->
                 scope.launch {
+                    Log.d("SquareScreenDisplay", "Reporting playback: mediaUuid=${item.id} playlistUuid=${currentPlaylist?.playlist?.uuid} scheduleUuid=${currentPlaylist?.schedule?.uuid}")
                     squareScreen.reportPlayback(
                         PlaybackReport(
                             mediaUuid = item.id,
