@@ -324,23 +324,21 @@ public final class io/squarescreen/core/model/PairingStatus$Pending : io/squares
 
 public final class io/squarescreen/core/model/PlaybackReport {
 	public static final field Companion Lio/squarescreen/core/model/PlaybackReport$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZ)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZ)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()I
-	public final fun component8 ()Z
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZ)Lio/squarescreen/core/model/PlaybackReport;
-	public static synthetic fun copy$default (Lio/squarescreen/core/model/PlaybackReport;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZILjava/lang/Object;)Lio/squarescreen/core/model/PlaybackReport;
+	public final fun component6 ()I
+	public final fun component7 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZ)Lio/squarescreen/core/model/PlaybackReport;
+	public static synthetic fun copy$default (Lio/squarescreen/core/model/PlaybackReport;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZILjava/lang/Object;)Lio/squarescreen/core/model/PlaybackReport;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCompleted ()Z
 	public final fun getDurationSeconds ()I
 	public final fun getEndedAt ()Ljava/lang/String;
 	public final fun getMediaUuid ()Ljava/lang/String;
-	public final fun getPlaylistId ()Ljava/lang/String;
 	public final fun getPlaylistUuid ()Ljava/lang/String;
 	public final fun getScheduleUuid ()Ljava/lang/String;
 	public final fun getStartedAt ()Ljava/lang/String;

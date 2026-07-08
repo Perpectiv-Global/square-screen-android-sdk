@@ -59,7 +59,6 @@ fun SquareScreenDisplay(
                         PlaybackReport(
                             mediaUuid = item.id,
                             playlistUuid = currentPlaylist?.playlist?.uuid,
-                            playlistId = currentPlaylist?.playlist?.id,
                             scheduleUuid = currentPlaylist?.schedule?.uuid,
                             startedAt = formatIso8601(startedAt),
                             endedAt = formatIso8601(endedAt),
