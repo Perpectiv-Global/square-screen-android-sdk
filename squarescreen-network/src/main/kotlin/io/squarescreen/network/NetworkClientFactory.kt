@@ -23,6 +23,7 @@ object NetworkClientFactory {
         ignoreUnknownKeys = true
         isLenient = true
         coerceInputValues = true
+        explicitNulls = false
     }
 
     fun create(config: SquareScreenConfig): NetworkDataSource {
