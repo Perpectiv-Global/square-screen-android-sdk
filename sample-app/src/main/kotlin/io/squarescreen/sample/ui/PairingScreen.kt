@@ -68,7 +68,6 @@ fun PairingScreen(onPaired: (DeviceCredentials) -> Unit) {
     // See DisposableEffect comment below for why we read into a local val.
     val registerSessionState = remember { mutableStateOf(SquareScreenPairing.create(context, androidId)) }
     val registerSession = registerSessionState.value
-    var registerAutoRetriedAlreadyPaired by remember { mutableStateOf(false) }
 
     DisposableEffect(registerSession) {
         onDispose { registerSession.cancel() }
@@ -77,27 +76,19 @@ fun PairingScreen(onPaired: (DeviceCredentials) -> Unit) {
     val registerStatus by registerSession.pairingStatus.collectAsState(initial = null)
 
     LaunchedEffect(registerStatus) {
-        when (val s = registerStatus) {
-            is PairingStatus.Approved -> onPaired(DeviceCredentials(s.deviceId, s.deviceToken))
-            // On first 409, restart the session — it will find any stored pairing token
-            // and go straight to pair-status polling to retrieve existing credentials.
-            PairingStatus.AlreadyPaired -> if (!registerAutoRetriedAlreadyPaired) {
-                registerAutoRetriedAlreadyPaired = true
-                registerSessionState.value = SquareScreenPairing.create(context, androidId)
-            }
-            else -> {}
+        if (registerStatus is PairingStatus.Approved) {
+            val s = registerStatus as PairingStatus.Approved
+            onPaired(DeviceCredentials(s.deviceId, s.deviceToken))
         }
     }
 
     val restartRegisterSession = {
-        registerAutoRetriedAlreadyPaired = false
         registerSessionState.value = SquareScreenPairing.create(context, androidId)
     }
 
     // Activate path — session only created when user submits a deviceId.
     val activateSessionState = remember { mutableStateOf<SquareScreenPairing?>(null) }
     val activateSession = activateSessionState.value
-    var activateAutoRetriedAlreadyPaired by remember { mutableStateOf(false) }
 
     DisposableEffect(activateSession) {
         onDispose { activateSession?.cancel() }
@@ -107,16 +98,9 @@ fun PairingScreen(onPaired: (DeviceCredentials) -> Unit) {
         .collectAsState(initial = null)
 
     LaunchedEffect(activateStatus) {
-        when (val s = activateStatus) {
-            is PairingStatus.Approved -> onPaired(DeviceCredentials(s.deviceId, s.deviceToken))
-            // On first 409, switch to the register path session so we can pick up any
-            // stored pairing token and call pair-status to retrieve existing credentials.
-            PairingStatus.AlreadyPaired -> if (!activateAutoRetriedAlreadyPaired) {
-                activateAutoRetriedAlreadyPaired = true
-                registerSessionState.value = SquareScreenPairing.create(context, androidId)
-                mode = PairingMode.REGISTER
-            }
-            else -> {}
+        if (activateStatus is PairingStatus.Approved) {
+            val s = activateStatus as PairingStatus.Approved
+            onPaired(DeviceCredentials(s.deviceId, s.deviceToken))
         }
     }
 
@@ -216,11 +200,11 @@ private fun RegisterContent(
             Text("Device approved — launching player...", color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center)
         }
 
-        PairingStatus.AlreadyPaired -> PairingErrorContent(
-            title = "Device already paired",
-            message = "This device is registered but credentials are missing locally. Contact your admin to re-issue credentials.",
-            onRetry = null
-        )
+        PairingStatus.AlreadyPaired -> {
+            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(32.dp), strokeWidth = 2.dp)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Re-pairing device...", color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center)
+        }
 
         PairingStatus.Expired -> PairingErrorContent(
             title = "Pairing window expired",
@@ -343,11 +327,11 @@ private fun ActivateContent(
             onRetry = onRetry
         )
 
-        PairingStatus.AlreadyPaired -> PairingErrorContent(
-            title = "Device already paired",
-            message = "This device is already paired. Contact your admin if you need to re-pair.",
-            onRetry = null
-        )
+        PairingStatus.AlreadyPaired -> {
+            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(32.dp), strokeWidth = 2.dp)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Re-pairing device...", color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center)
+        }
 
         PairingStatus.IdentifierMismatch -> PairingErrorContent(
             title = "Identifier mismatch",
