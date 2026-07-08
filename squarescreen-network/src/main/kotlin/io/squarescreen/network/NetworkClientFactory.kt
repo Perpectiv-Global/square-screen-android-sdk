@@ -34,9 +34,13 @@ object NetworkClientFactory {
     }
 
     private fun buildOkHttpClient(config: SquareScreenConfig): OkHttpClient {
+        val logging = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
         return OkHttpClient.Builder()
             .addInterceptor(DemoBypassInterceptor())
             .addInterceptor(DeviceAuthInterceptor(config.deviceId, config.deviceToken))
+            .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
