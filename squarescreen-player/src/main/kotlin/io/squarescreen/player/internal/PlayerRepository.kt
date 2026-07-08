@@ -46,7 +46,7 @@ internal class PlayerRepository(
                 cache.savePlaylist(result.data)
                 lastKnownPlaylist = result.data
                 SquareScreenServiceLocator.deviceStatusState.value = DeviceStatus.ONLINE
-                SquareScreenServiceLocator.log(TAG, "Playlist fetched from network (${result.data.items.size} items)")
+                SquareScreenServiceLocator.log(TAG, "Playlist fetched from network (${result.data.items} items)")
                 result
             }
             is SquareScreenResult.Error -> {
@@ -69,7 +69,14 @@ internal class PlayerRepository(
     }
 
     suspend fun reportPlayback(report: PlaybackReport): SquareScreenResult<Unit> {
-        return network.reportPlayback(report)
+        val result = network.reportPlayback(report)
+        when (result) {
+            is SquareScreenResult.Success ->
+                SquareScreenServiceLocator.log(TAG, "Playback reported: mediaUuid=${report.mediaUuid} playlistUuid=${report.playlistUuid} → 200 OK")
+            is SquareScreenResult.Error ->
+                SquareScreenServiceLocator.logError(TAG, "Playback report failed: mediaUuid=${report.mediaUuid} → ${result.error}")
+        }
+        return result
     }
 
     suspend fun acknowledgeCommand(
