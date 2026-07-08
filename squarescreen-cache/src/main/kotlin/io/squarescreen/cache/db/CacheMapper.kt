@@ -32,7 +32,7 @@ internal object CacheMapper {
         } else null
 
         val playlistInfo = if (entity.playlistUuid != null && entity.playlistName != null) {
-            PlaylistInfo(uuid = entity.playlistUuid, name = entity.playlistName)
+            PlaylistInfo(id = entity.playlistServerId, uuid = entity.playlistUuid, name = entity.playlistName)
         } else null
 
         return Playlist(
@@ -56,7 +56,8 @@ internal object CacheMapper {
             scheduleName = playlist.schedule?.name,
             schedulePriority = playlist.schedule?.priority,
             playlistUuid = playlist.playlist?.uuid,
-            playlistName = playlist.playlist?.name
+            playlistName = playlist.playlist?.name,
+            playlistServerId = playlist.playlist?.id
         )
     }
 

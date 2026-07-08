@@ -21,5 +21,6 @@ internal data class PlaylistEntity(
     val schedulePriority: Int?,
     // Playlist metadata
     val playlistUuid: String?,
-    val playlistName: String?
+    val playlistName: String?,
+    val playlistServerId: String?
 )
