@@ -38,7 +38,8 @@ internal class PlayerRepository(
                 cache.savePlaylist(result.data)
                 lastKnownPlaylist = result.data
                 SquareScreenServiceLocator.deviceStatusState.value = DeviceStatus.ONLINE
-                SquareScreenServiceLocator.log(TAG, "Playlist fetched from network (${result.data.items.size} items)")
+                val p = result.data
+                SquareScreenServiceLocator.log(TAG, "Playlist fetched from network — items=${p.items.size} playlistUuid=${p.playlist?.uuid} playlistName=${p.playlist?.name} scheduleUuid=${p.schedule?.uuid} scheduleName=${p.schedule?.name}")
                 result
             }
             is SquareScreenResult.Error -> {
