@@ -62,7 +62,10 @@ internal class NetworkDataSourceImpl(
         safeApiCall {
             val response = api.reportPlayback(report)
             if (response.isSuccessful) SquareScreenResult.Success(Unit)
-            else SquareScreenResult.Error(mapHttpError(response.code(), response.message()))
+            else {
+                val errorBody = response.errorBody()?.string() ?: ""
+                SquareScreenResult.Error(mapHttpError(response.code(), errorBody))
+            }
         }
 
     override suspend fun fetchCommands(): SquareScreenResult<List<Command>> =
