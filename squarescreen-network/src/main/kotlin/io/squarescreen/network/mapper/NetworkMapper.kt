@@ -24,7 +24,7 @@ internal object NetworkMapper {
             items = dto.items.map { mapPlaylistItem(it) },
             strategy = dto.strategy?.let { mapStrategy(it) },
             schedule = dto.schedule?.let { ScheduleInfo(it.uuid, it.name, it.priority) },
-            playlist = dto.playlist?.let { PlaylistInfo(it.uuid, it.name) },
+            playlist = dto.playlist?.let { PlaylistInfo(it.id, it.uuid, it.name) },
             cachedAt = cachedAt
         )
     }
