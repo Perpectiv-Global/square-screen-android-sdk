@@ -28,6 +28,7 @@ internal data class PlaylistItemEntity(
     val transition: String?,
     val title: String? = null,
     val thumbnail: String? = null,
+    val playlistUuid: String? = null,
     /** Preserves server-defined display order. */
     val sortOrder: Int
 )

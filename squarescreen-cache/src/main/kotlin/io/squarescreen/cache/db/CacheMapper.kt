@@ -74,6 +74,7 @@ internal object CacheMapper {
                 transition = item.transition?.name?.lowercase(),
                 title = item.title,
                 thumbnail = item.thumbnail,
+                playlistUuid = item.playlistUuid,
                 sortOrder = index
             )
         }
@@ -94,7 +95,8 @@ internal object CacheMapper {
             height = entity.height,
             transition = mapTransition(entity.transition),
             title = entity.title,
-            thumbnail = entity.thumbnail
+            thumbnail = entity.thumbnail,
+            playlistUuid = entity.playlistUuid
         )
     }
 

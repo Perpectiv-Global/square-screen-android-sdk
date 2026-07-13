@@ -56,11 +56,11 @@ fun SquareScreenDisplay(
             modifier = Modifier.fillMaxSize(),
             onItemCompleted = { item, startedAt, endedAt ->
                 scope.launch {
-                    Log.d("SquareScreenDisplay", "Reporting playback: mediaUuid=${item.id} playlistUuid=${currentPlaylist?.playlist?.uuid} scheduleUuid=${currentPlaylist?.schedule?.uuid}")
+                    Log.d("SquareScreenDisplay", "Reporting playback: mediaUuid=${item.id} playlistUuid=${item.playlistUuid} scheduleUuid=${currentPlaylist?.schedule?.uuid}")
                     squareScreen.reportPlayback(
                         PlaybackReport(
                             mediaUuid = item.id,
-                            playlistUuid = currentPlaylist?.playlist?.uuid,
+                            playlistUuid = item.playlistUuid,
                             scheduleUuid = currentPlaylist?.schedule?.uuid,
                             startedAt = formatIso8601(startedAt),
                             endedAt = formatIso8601(endedAt),

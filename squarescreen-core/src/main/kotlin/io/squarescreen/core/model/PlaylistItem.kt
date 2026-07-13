@@ -23,5 +23,6 @@ data class PlaylistItem(
     val height: Int? = null,
     val transition: TransitionType? = null,
     val title: String? = null,
-    val thumbnail: String? = null
+    val thumbnail: String? = null,
+    val playlistUuid: String? = null
 )
