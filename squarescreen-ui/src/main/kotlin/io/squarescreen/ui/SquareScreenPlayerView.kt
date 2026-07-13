@@ -1,5 +1,6 @@
 package io.squarescreen.ui
 
+import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -83,25 +84,28 @@ private fun PlaylistRenderer(
         else playlist.items
     }
 
-    var currentIndex by remember(playlist) { mutableIntStateOf(0) }
+    val loop = playlist.strategy?.loop != false
+
+    // Monotonically increasing tick so LaunchedEffect always restarts after each item,
+    // even when the playlist has a single item and the index would reset to 0.
+    var tick by remember(playlist) { mutableIntStateOf(0) }
+    val currentIndex = tick % items.size
     val currentItem = items[currentIndex]
 
     val effectiveTransition = currentItem.transition ?: TransitionType.NONE
 
-    LaunchedEffect(currentIndex, playlist) {
+    LaunchedEffect(tick, playlist) {
+        Log.d("PlaylistRenderer", "Item started: index=$currentIndex tick=$tick id=${currentItem.id} duration=${currentItem.duration}s")
         val startedAt = System.currentTimeMillis()
         delay(currentItem.duration * 1000L)
         val endedAt = System.currentTimeMillis()
 
-        // Report the completed item before advancing
+        Log.d("PlaylistRenderer", "Item completed: index=$currentIndex id=${currentItem.id} — firing onItemCompleted")
         onItemCompleted?.invoke(currentItem, startedAt, endedAt)
 
-        val nextIndex = currentIndex + 1
-        val loop = playlist.strategy?.loop != false
-        if (nextIndex < items.size) {
-            currentIndex = nextIndex
-        } else if (loop) {
-            currentIndex = 0
+        val isLastItem = currentIndex == items.size - 1
+        if (!isLastItem || loop) {
+            tick++
         }
     }
 
