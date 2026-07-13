@@ -35,6 +35,7 @@ class SquareScreenPlayerService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var heartbeatJob: Job? = null
+    private var playlistRefreshJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -44,6 +45,7 @@ class SquareScreenPlayerService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(NOTIFICATION_ID, buildNotification())
         startHeartbeatLoop()
+        startPlaylistRefreshLoop()
         return START_STICKY
     }
 
@@ -51,8 +53,26 @@ class SquareScreenPlayerService : Service() {
 
     override fun onDestroy() {
         heartbeatJob?.cancel()
+        playlistRefreshJob?.cancel()
         stopForeground(STOP_FOREGROUND_REMOVE)
         super.onDestroy()
+    }
+
+    private fun startPlaylistRefreshLoop() {
+        playlistRefreshJob?.cancel()
+        playlistRefreshJob = scope.launch {
+            val network = SquareScreenServiceLocator.networkDataSource ?: return@launch
+            val cache = SquareScreenServiceLocator.cacheProvider ?: return@launch
+            while (true) {
+                delay(60_000L)
+                SquareScreenServiceLocator.log(TAG, "Periodic playlist refresh")
+                val result = network.fetchNowPlaying()
+                if (result is io.squarescreen.core.result.SquareScreenResult.Success) {
+                    cache.savePlaylist(result.data)
+                    SquareScreenServiceLocator.nowPlayingState.value = result
+                }
+            }
+        }
     }
 
     private fun startHeartbeatLoop() {
