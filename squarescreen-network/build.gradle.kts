@@ -12,7 +12,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        minSdk = 29
+        minSdk = 28
         consumerProguardFiles("consumer-proguard-rules.pro")
         buildConfigField("String", "BASE_URL", "\"https://square-screen-api-development-f7zuxa.laravel.cloud/api/v1\"")
     }
