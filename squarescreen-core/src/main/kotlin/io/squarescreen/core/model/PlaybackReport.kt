@@ -15,7 +15,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class PlaybackReport(
-    val id: String,
+    @SerialName("item_id") val id: String,
     @SerialName("schedule_uuid") val scheduleUuid: String?,
     @SerialName("started_at") val startedAt: String,
     @SerialName("ended_at") val endedAt: String,
