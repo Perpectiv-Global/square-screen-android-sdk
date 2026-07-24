@@ -6,8 +6,7 @@ import kotlinx.serialization.Serializable
 /**
  * Proof-of-play report sent to the server after a playlist item finishes displaying.
  *
- * @param mediaUuid UUID of the media file that was played.
- * @param playlistUuid UUID of the playlist this item belongs to, if known.
+ * @param id ID of the playlist item that was played.
  * @param scheduleUuid UUID of the schedule driving playback, if known.
  * @param startedAt ISO 8601 timestamp when the item started displaying.
  * @param endedAt ISO 8601 timestamp when the item finished displaying.
@@ -16,8 +15,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class PlaybackReport(
-    @SerialName("media_uuid") val mediaUuid: String,
-    @SerialName("playlist_uuid") val playlistUuid: String?,
+    val id: String,
     @SerialName("schedule_uuid") val scheduleUuid: String?,
     @SerialName("started_at") val startedAt: String,
     @SerialName("ended_at") val endedAt: String,

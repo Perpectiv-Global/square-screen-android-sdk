@@ -66,9 +66,9 @@ internal class PlayerRepository(
         val result = network.reportPlayback(report)
         when (result) {
             is SquareScreenResult.Success ->
-                SquareScreenServiceLocator.log(TAG, "Playback reported: mediaUuid=${report.mediaUuid} playlistUuid=${report.playlistUuid} → 200 OK")
+                SquareScreenServiceLocator.log(TAG, "Playback reported: id=${report.id} → 200 OK")
             is SquareScreenResult.Error ->
-                SquareScreenServiceLocator.logError(TAG, "Playback report failed: mediaUuid=${report.mediaUuid} → ${result.error}")
+                SquareScreenServiceLocator.logError(TAG, "Playback report failed: id=${report.id} → ${result.error}")
         }
         return result
     }
