@@ -34,15 +34,17 @@ class PlayerRepositoryTest {
     }
 
     @Test
-    fun `fetchPlaylist returns cached playlist when fresh`() = runTest {
+    fun `fetchPlaylist always hits network first`() = runTest {
         val cachedPlaylist = emptyPlaylist(cachedAt = System.currentTimeMillis())
         fakeCache.storedPlaylist = cachedPlaylist
+        val networkPlaylist = emptyPlaylist(cachedAt = System.currentTimeMillis())
+        fakeNetwork.nowPlayingResult = SquareScreenResult.Success(networkPlaylist)
 
         val result = repository.fetchPlaylist()
 
         assertTrue(result is SquareScreenResult.Success)
-        assertEquals(cachedPlaylist, (result as SquareScreenResult.Success).data)
-        assertEquals(0, fakeNetwork.fetchNowPlayingCallCount)
+        assertEquals(networkPlaylist, (result as SquareScreenResult.Success).data)
+        assertEquals(1, fakeNetwork.fetchNowPlayingCallCount)
         assertEquals(DeviceStatus.ONLINE, SquareScreenServiceLocator.deviceStatusState.value)
     }
 
@@ -132,7 +134,7 @@ class PlayerRepositoryTest {
         override suspend fun fetchEmergencyAlert(): SquareScreenResult<EmergencyAlert?> =
             SquareScreenResult.Success(null)
 
-        override suspend fun reportPlayback(report: PlaybackReport): SquareScreenResult<Unit> =
+        override suspend fun reportPlayback(reports: List<PlaybackReport>): SquareScreenResult<Unit> =
             SquareScreenResult.Success(Unit)
 
         override suspend fun fetchCommands(): SquareScreenResult<List<Command>> =
