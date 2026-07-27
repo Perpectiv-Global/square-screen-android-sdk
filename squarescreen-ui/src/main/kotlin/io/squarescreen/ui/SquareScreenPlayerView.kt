@@ -86,15 +86,17 @@ private fun PlaylistRenderer(
 
     val loop = playlist.strategy?.loop != false
 
-    // Monotonically increasing tick so LaunchedEffect always restarts after each item,
-    // even when the playlist has a single item and the index would reset to 0.
-    var tick by remember(playlist) { mutableIntStateOf(0) }
+    // Key tick off item IDs only, not the full playlist object. This way, 60-second
+    // playlist refreshes that rotate presigned URLs (same IDs, new query params) do not
+    // reset the tick and cut the currently-playing item short.
+    val itemIds = items.map { it.id }
+    var tick by remember(itemIds) { mutableIntStateOf(0) }
     val currentIndex = tick % items.size
     val currentItem = items[currentIndex]
 
     val effectiveTransition = currentItem.transition ?: TransitionType.NONE
 
-    LaunchedEffect(tick, playlist) {
+    LaunchedEffect(tick, itemIds) {
         Log.d("PlaylistRenderer", "Item started: index=$currentIndex tick=$tick id=${currentItem.id} duration=${currentItem.duration}s")
         val startedAt = System.currentTimeMillis()
         delay(currentItem.duration * 1000L)
