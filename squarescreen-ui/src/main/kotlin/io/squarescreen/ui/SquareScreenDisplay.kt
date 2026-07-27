@@ -1,5 +1,6 @@
 package io.squarescreen.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -7,7 +8,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import android.util.Log
 import io.squarescreen.core.model.PlaybackReport
 import io.squarescreen.core.result.SquareScreenResult
 import io.squarescreen.player.SquareScreen
@@ -22,7 +22,8 @@ import java.util.TimeZone
  * into a single drop-in component.
  *
  * Automatically reports proof-of-play via [SquareScreen.reportPlayback] after each item
- * finishes displaying.
+ * finishes displaying. If the report fails, [onReportFailed] is called with the report so
+ * the caller can cache it and retry later.
  *
  * Usage:
  * ```kotlin
@@ -36,6 +37,8 @@ import java.util.TimeZone
  *
  * @param squareScreen The initialized [SquareScreen] instance.
  * @param modifier Modifier applied to the root container.
+ * @param onReportFailed Called when a playback report fails to send. Use this to cache the
+ *   report and retry when connectivity is restored.
  * @param emptyContent Composable shown when no content is scheduled.
  * @param errorContent Composable shown on a persistent network error with no cache.
  */
@@ -43,6 +46,7 @@ import java.util.TimeZone
 fun SquareScreenDisplay(
     squareScreen: SquareScreen,
     modifier: Modifier = Modifier,
+    onReportFailed: ((PlaybackReport) -> Unit)? = null,
     emptyContent: @Composable () -> Unit = {},
     errorContent: @Composable () -> Unit = {}
 ) {
@@ -56,17 +60,18 @@ fun SquareScreenDisplay(
             modifier = Modifier.fillMaxSize(),
             onItemCompleted = { item, startedAt, endedAt ->
                 scope.launch {
-                    Log.d("SquareScreenDisplay", "Reporting playback: id=${item.id} scheduleUuid=${currentPlaylist?.schedule?.uuid}")
-                    squareScreen.reportPlayback(
-                        PlaybackReport(
-                            id = item.id,
-                            scheduleUuid = currentPlaylist?.schedule?.uuid,
-                            startedAt = formatIso8601(startedAt),
-                            endedAt = formatIso8601(endedAt),
-                            durationSeconds = item.duration,
-                            completed = true
-                        )
+                    val report = PlaybackReport(
+                        id = item.id,
+                        startedAt = formatIso8601(startedAt),
+                        endedAt = formatIso8601(endedAt),
+                        durationSeconds = item.duration,
+                        completed = true
                     )
+                    Log.d("SquareScreenDisplay", "Reporting playback: id=${item.id}")
+                    val result = squareScreen.reportPlayback(listOf(report))
+                    if (result is SquareScreenResult.Error) {
+                        onReportFailed?.invoke(report)
+                    }
                 }
             },
             emptyContent = emptyContent,

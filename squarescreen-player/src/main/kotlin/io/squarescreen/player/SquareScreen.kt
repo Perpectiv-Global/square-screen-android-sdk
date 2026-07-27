@@ -105,9 +105,9 @@ class SquareScreen private constructor(
      * [io.squarescreen.ui.SquareScreenDisplay] does this automatically when using the
      * UI module. Call manually if using [io.squarescreen.player.SquareScreen] headlessly.
      */
-    suspend fun reportPlayback(report: PlaybackReport): SquareScreenResult<Unit> {
-        SquareScreenServiceLocator.log(TAG, "Reporting playback for item ${report.id}")
-        return repository.reportPlayback(report)
+    suspend fun reportPlayback(reports: List<PlaybackReport>): SquareScreenResult<Unit> {
+        SquareScreenServiceLocator.log(TAG, "Reporting playback for ${reports.size} item(s)")
+        return repository.reportPlayback(reports)
     }
 
     /**

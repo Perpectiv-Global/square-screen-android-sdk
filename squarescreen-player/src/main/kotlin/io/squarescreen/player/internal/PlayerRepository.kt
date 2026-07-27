@@ -62,13 +62,13 @@ internal class PlayerRepository(
         return network.fetchEmergencyAlert()
     }
 
-    suspend fun reportPlayback(report: PlaybackReport): SquareScreenResult<Unit> {
-        val result = network.reportPlayback(report)
+    suspend fun reportPlayback(reports: List<PlaybackReport>): SquareScreenResult<Unit> {
+        val result = network.reportPlayback(reports)
         when (result) {
             is SquareScreenResult.Success ->
-                SquareScreenServiceLocator.log(TAG, "Playback reported: id=${report.id} → 200 OK")
+                SquareScreenServiceLocator.log(TAG, "Playback reported: ${reports.size} item(s) → 200 OK")
             is SquareScreenResult.Error ->
-                SquareScreenServiceLocator.logError(TAG, "Playback report failed: id=${report.id} → ${result.error}")
+                SquareScreenServiceLocator.logError(TAG, "Playback report failed: ${reports.size} item(s) → ${result.error}")
         }
         return result
     }

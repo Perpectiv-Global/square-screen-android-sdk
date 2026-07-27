@@ -12,7 +12,7 @@ public final class io/squarescreen/player/SquareScreen {
 	public final fun getNowPlaying ()Lkotlinx/coroutines/flow/Flow;
 	public final fun nowPlayingCallback (Lkotlinx/coroutines/CoroutineScope;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Lkotlinx/coroutines/Job;
 	public final fun refresh (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun reportPlayback (Lio/squarescreen/core/model/PlaybackReport;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun reportPlayback (Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun shutdown ()V
 }
 

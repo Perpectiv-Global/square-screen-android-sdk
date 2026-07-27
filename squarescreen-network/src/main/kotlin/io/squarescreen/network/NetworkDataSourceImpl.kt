@@ -10,6 +10,7 @@ import io.squarescreen.core.result.SquareScreenError
 import io.squarescreen.core.result.SquareScreenResult
 import io.squarescreen.network.api.SquareScreenApiService
 import io.squarescreen.network.dto.AckRequestDto
+import io.squarescreen.network.dto.PlaybackReportRequestDto
 import io.squarescreen.network.mapper.NetworkMapper
 
 internal class NetworkDataSourceImpl(
@@ -58,9 +59,9 @@ internal class NetworkDataSourceImpl(
             }
         }
 
-    override suspend fun reportPlayback(report: PlaybackReport): SquareScreenResult<Unit> =
+    override suspend fun reportPlayback(reports: List<PlaybackReport>): SquareScreenResult<Unit> =
         safeApiCall {
-            val response = api.reportPlayback(report)
+            val response = api.reportPlayback(PlaybackReportRequestDto(reports))
             if (response.isSuccessful) SquareScreenResult.Success(Unit)
             else {
                 val errorBody = response.errorBody()?.string() ?: ""

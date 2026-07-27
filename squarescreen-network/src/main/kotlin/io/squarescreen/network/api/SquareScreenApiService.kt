@@ -1,8 +1,8 @@
 package io.squarescreen.network.api
 
 import io.squarescreen.core.model.HeartbeatPayload
-import io.squarescreen.core.model.PlaybackReport
 import io.squarescreen.network.dto.AckRequestDto
+import io.squarescreen.network.dto.PlaybackReportRequestDto
 import io.squarescreen.network.dto.AckResponseDto
 import io.squarescreen.network.dto.CommandsResponseDto
 import io.squarescreen.network.dto.EmergencyResponseDto
@@ -37,7 +37,7 @@ internal interface SquareScreenApiService {
 
     @POST("screen/playback")
     suspend fun reportPlayback(
-        @Body report: PlaybackReport
+        @Body body: PlaybackReportRequestDto
     ): Response<PlaybackReportResponseDto>
 
     @GET("screen/commands")

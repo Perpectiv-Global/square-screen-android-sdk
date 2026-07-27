@@ -38,10 +38,10 @@ interface NetworkDataSource {
     suspend fun fetchEmergencyAlert(): SquareScreenResult<EmergencyAlert?>
 
     /**
-     * Reports a completed playback event (proof-of-play) to the server.
-     * Should be called after each playlist item finishes displaying.
+     * Reports a batch of completed playback events (proof-of-play) to the server.
+     * Sent as {"playbacks": [...]}.
      */
-    suspend fun reportPlayback(report: PlaybackReport): SquareScreenResult<Unit>
+    suspend fun reportPlayback(reports: List<PlaybackReport>): SquareScreenResult<Unit>
 
     /**
      * Polls for pending server-issued commands targeting this device.
