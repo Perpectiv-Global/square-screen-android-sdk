@@ -32,7 +32,7 @@ dependencies {
 }
 ```
 
-Minimum SDK: **API 29 (Android 10)**
+Minimum SDK: **API 28 (Android 9)**
 
 ---
 
@@ -63,12 +63,13 @@ pairing.pairingStatus.collect { status ->
         }
         PairingStatus.Pending        -> showAwaitingApprovalUI()
         PairingStatus.DeviceNotFound -> showDeviceNotFoundUI(androidId)
-        PairingStatus.AlreadyPaired  -> initializeFromStoredCredentials()
         PairingStatus.Expired        -> showExpiredUI()
         PairingStatus.InvalidToken   -> showInvalidTokenUI()
         is PairingStatus.Error       -> showGenericError(status.throwable)
     }
 }
+// Note: AlreadyPaired is handled internally — the SDK clears the stale token,
+// re-registers, and emits Pending automatically. You never need to handle it.
 ```
 
 ### Path 2 — Activate (developer-supplied credentials)
@@ -95,12 +96,13 @@ pairing.pairingStatus.collect { status ->
         }
         PairingStatus.Pending        -> showAwaitingApprovalUI()
         PairingStatus.DeviceNotFound -> showDeviceNotFoundUI()
-        PairingStatus.AlreadyPaired  -> initializeFromStoredCredentials()
         PairingStatus.Expired        -> showExpiredUI()
         PairingStatus.InvalidToken   -> showInvalidTokenUI()
         is PairingStatus.Error       -> showGenericError(status.throwable)
     }
 }
+// Note: AlreadyPaired is handled internally — the SDK clears the stale token,
+// re-registers, and emits Pending automatically. You never need to handle it.
 ```
 
 ### How it works
@@ -264,27 +266,47 @@ If you are **not** using `squarescreen-ui`, subscribe to `squareScreen.emergency
 
 ### Proof-of-play
 
-`SquareScreenDisplay` reports playback automatically. If you use `SquareScreenPlayerView` directly, wire the `onItemCompleted` callback:
+`SquareScreenDisplay` reports playback automatically. It also accepts an `onReportFailed` callback so you can cache failed reports and retry them when connectivity is restored:
+
+```kotlin
+SquareScreenDisplay(
+    squareScreen = squareScreen,
+    modifier = Modifier.fillMaxSize(),
+    onReportFailed = { report ->
+        // Persist and retry when network returns
+        pendingStore.add(report)
+    }
+)
+```
+
+If you use `SquareScreenPlayerView` directly, wire the `onItemCompleted` callback:
 
 ```kotlin
 SquareScreenPlayerView(
     nowPlaying = squareScreen.nowPlaying,
     onItemCompleted = { item, startedAt, endedAt ->
         scope.launch {
-            squareScreen.reportPlayback(
+            squareScreen.reportPlayback(listOf(
                 PlaybackReport(
-                    mediaUuid = item.id,
-                    playlistUuid = currentPlaylist?.playlist?.uuid,
-                    scheduleUuid = currentPlaylist?.schedule?.uuid,
+                    id = item.id,
                     startedAt = formatIso8601(startedAt),
                     endedAt = formatIso8601(endedAt),
                     durationSeconds = item.duration,
                     completed = true
                 )
-            )
+            ))
         }
     }
 )
+```
+
+`reportPlayback` accepts a list so you can batch-send cached reports when connectivity is restored:
+
+```kotlin
+// On network reconnect — flush pending reports
+val pending = pendingStore.getAll()
+val result = squareScreen.reportPlayback(pending)
+if (result is SquareScreenResult.Success) pendingStore.clear()
 ```
 
 ---
@@ -303,7 +325,7 @@ The SDK caches both playlist metadata and media files so content continues to pl
 - **TTL:** A cached playlist is considered fresh for `cacheTtlSeconds` (default 3600 s / 1 hour). After expiry the SDK fetches a fresh copy on the next request.
 - **Offline fallback:** If the network fetch fails and a cached playlist exists (even expired), the SDK serves it and emits `DeviceStatus.OFFLINE`.
 - **Deduplication:** Media files are stored under a SHA-256 hash of the source URL, so the same file is never downloaded twice even if it appears in multiple playlists.
-- **Storage permissions:** The media cache directory lives in the app's private external storage (`context.getExternalFilesDir()`). No `READ_EXTERNAL_STORAGE` or `WRITE_EXTERNAL_STORAGE` permission is required on API 29+.
+- **Storage permissions:** The media cache directory lives in the app's private external storage (`context.getExternalFilesDir()`). No `READ_EXTERNAL_STORAGE` or `WRITE_EXTERNAL_STORAGE` permission is required on API 28+.
 
 ### Custom cache
 
@@ -395,7 +417,7 @@ logger = object : SquareScreenLogger {
 
 ## Requirements
 
-- Android **API 29+**
+- Android **API 28+**
 - Kotlin **2.0+**
 - Jetpack Compose (only if using `squarescreen-ui`)
 
