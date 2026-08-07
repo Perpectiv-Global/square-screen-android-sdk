@@ -14,16 +14,14 @@ android {
     defaultConfig {
         minSdk = 28
         consumerProguardFiles("consumer-proguard-rules.pro")
-        buildConfigField("String", "BASE_URL", "\"https://square-screen-api-development-f7zuxa.laravel.cloud/api/v1\"")
     }
 
     buildTypes {
         debug {
-            // Point to production until a staging environment is available.
-            buildConfigField("String", "BASE_URL", "\"https://square-screen-api-development-f7zuxa.laravel.cloud/api/v1\"")
+            buildConfigField("String", "BASE_URL", "\"https://testapi.squarescreen.io/api/v1\"")
         }
         release {
-            buildConfigField("String", "BASE_URL", "\"https://square-screen-api-development-f7zuxa.laravel.cloud/api/v1\"")
+            buildConfigField("String", "BASE_URL", "\"https://api.squarescreen.io/api/v1\"")
         }
     }
 
