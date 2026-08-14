@@ -41,7 +41,7 @@ class PairingNetworkClient {
         .build()
 
     private val api: PairingApiService = Retrofit.Builder()
-        .baseUrl(BuildConfig.BASE_URL.trimEnd('/') + "/")
+        .baseUrl(SquareScreenEnvironment.current.baseUrl.trimEnd('/') + "/")
         .client(okHttpClient)
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()

@@ -188,8 +188,22 @@ SquareScreenConfig(
 )
 ```
 
-> The API base URL is managed internally by the SDK — debug builds target staging,
-> release builds target production. Integrators do not set it.
+> **Environment** — the active API environment is set in one place inside the SDK source:
+> `squarescreen-network/src/main/kotlin/io/squarescreen/network/SquareScreenEnvironment.kt`
+>
+> ```kotlin
+> companion object {
+>     // Change this line to switch environments before building.
+>     val current: SquareScreenEnvironment = LIVE
+> }
+> ```
+>
+> | Value | Base URL |
+> |---|---|
+> | `LIVE` | `https://api.squarescreen.io/api/v1` |
+> | `TEST` | `https://testapi.squarescreen.io/api/v1` |
+>
+> Integrators do not set the base URL — it is an internal SDK concern.
 
 ---
 

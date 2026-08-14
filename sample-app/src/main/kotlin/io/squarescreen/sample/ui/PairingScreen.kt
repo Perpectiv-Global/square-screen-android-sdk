@@ -38,7 +38,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import io.squarescreen.sample.R
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +49,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.squarescreen.core.logging.SquareScreenDebugLogger
 import io.squarescreen.core.model.PairingStatus
 import io.squarescreen.player.SquareScreenPairing
 import io.squarescreen.sample.data.DeviceCredentials
@@ -84,11 +88,11 @@ fun PairingScreen(onPaired: (DeviceCredentials) -> Unit) {
     }
 
     val startRegisterSession = {
-        registerSessionState.value = SquareScreenPairing.create(context, androidId)
+        registerSessionState.value = SquareScreenPairing.create(context, androidId, SquareScreenDebugLogger())
     }
 
     val restartRegisterSession = {
-        registerSessionState.value = SquareScreenPairing.create(context, androidId)
+        registerSessionState.value = SquareScreenPairing.create(context, androidId, SquareScreenDebugLogger())
     }
 
     // Activate path — session created when user submits a device ID.
@@ -163,7 +167,8 @@ fun PairingScreen(onPaired: (DeviceCredentials) -> Unit) {
                     activateSessionState.value = SquareScreenPairing.createWithActivation(
                         context = context,
                         deviceId = deviceId,
-                        deviceToken = androidId
+                        deviceToken = androidId,
+                        logger = SquareScreenDebugLogger()
                     )
                 },
                 onRetry = { activateSessionState.value = null },
@@ -480,8 +485,12 @@ private fun PairingScaffold(content: @Composable () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("SquareScreen", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
+            androidx.compose.foundation.Image(
+                painter = painterResource(R.drawable.ic_squarescreen_logo),
+                contentDescription = "SquareScreen",
+                modifier = Modifier.height(36.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 "Pair this device to your workspace",
                 color = Color.White.copy(alpha = 0.6f),

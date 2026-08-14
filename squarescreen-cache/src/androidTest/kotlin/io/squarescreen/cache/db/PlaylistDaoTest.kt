@@ -110,12 +110,16 @@ class PlaylistDaoTest {
         strategyLoop = true,
         strategyShuffle = false,
         strategyPreloadCount = 3,
-        strategyShowThumbnail = true,
-        strategyDefaultTransition = "fade"
+        scheduleUuid = null,
+        scheduleName = null,
+        schedulePriority = null,
+        playlistUuid = null,
+        playlistName = null,
+        playlistServerId = null
     )
 
     private fun itemEntity(id: Int, url: String, sortOrder: Int) = PlaylistItemEntity(
-        id = id,
+        id = id.toString(),
         playlistId = 1,
         type = "image",
         url = url,

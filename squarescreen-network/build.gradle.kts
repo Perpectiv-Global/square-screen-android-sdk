@@ -16,19 +16,6 @@ android {
         consumerProguardFiles("consumer-proguard-rules.pro")
     }
 
-    buildTypes {
-        debug {
-            buildConfigField("String", "BASE_URL", "\"https://testapi.squarescreen.io/api/v1\"")
-        }
-        release {
-            buildConfigField("String", "BASE_URL", "\"https://api.squarescreen.io/api/v1\"")
-        }
-    }
-
-    buildFeatures {
-        buildConfig = true
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
