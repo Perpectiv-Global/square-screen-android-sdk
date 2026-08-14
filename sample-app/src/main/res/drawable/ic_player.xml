@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M8,5v14l11,-7z" />
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+    <!-- Shape is 64×59 — centred in an 80×80 viewport with ~8dp h-pad and ~10.5dp v-pad -->
+    <group
+        android:translateX="8.2"
+        android:translateY="10.5">
+        <path
+            android:fillColor="#FF5722"
+            android:fillType="evenOdd"
+            android:pathData="M20.4609 43.1641H20.4619V0H63.626V43.1641H63.625L43.1641 59H0V19.9004L20.4609 0V43.1641ZM26.0654 37.8379H58.2988V5.60547H26.0654V37.8379Z" />
+    </group>
 </vector>
