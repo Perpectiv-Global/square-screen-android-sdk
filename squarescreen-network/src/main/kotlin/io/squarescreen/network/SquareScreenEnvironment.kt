@@ -1,6 +1,6 @@
 package io.squarescreen.network
 
-enum class SquareScreenEnvironment(internal val baseUrl: String) {
+internal enum class SquareScreenEnvironment(val baseUrl: String) {
     LIVE("https://api.squarescreen.io/api/v1"),
     TEST("https://testapi.squarescreen.io/api/v1");
 
