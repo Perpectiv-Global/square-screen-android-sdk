@@ -51,6 +51,7 @@ val androidId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDRO
 val pairing = SquareScreenPairing.create(
     context = applicationContext,
     osIdentifier = androidId,
+    environment = SquareScreenEnvironment.LIVE, // match the environment used in SquareScreenConfig
     logger = if (BuildConfig.DEBUG) SquareScreenDebugLogger() else null
 )
 
@@ -85,6 +86,7 @@ val pairing = SquareScreenPairing.createWithActivation(
     context = applicationContext,
     deviceId = "AB12CD34",           // created in the SquareScreen admin dashboard
     deviceToken = telephonyManager.imei ?: myInstallationUuid,
+    environment = SquareScreenEnvironment.LIVE, // match the environment used in SquareScreenConfig
     logger = if (BuildConfig.DEBUG) SquareScreenDebugLogger() else null
 )
 
@@ -177,6 +179,7 @@ fun PlayerScreen() {
 SquareScreenConfig(
     deviceId = "...",                           // required — X-Device-Id header
     deviceToken = "...",                        // required — X-Device-Token header
+    environment = SquareScreenEnvironment.LIVE, // LIVE (default) or TEST
     heartbeatIntervalSeconds = 60L,            // min 30, default 60
     emergencyPollIntervalSeconds = 30L,        // min 15, default 30
     cacheTtlSeconds = 3600L,                   // default 1 hour
@@ -188,22 +191,12 @@ SquareScreenConfig(
 )
 ```
 
-> **Environment** — the active API environment is set in one place inside the SDK source:
-> `squarescreen-network/src/main/kotlin/io/squarescreen/network/SquareScreenEnvironment.kt`
->
-> ```kotlin
-> companion object {
->     // Change this line to switch environments before building.
->     val current: SquareScreenEnvironment = LIVE
-> }
-> ```
->
-> | Value | Base URL |
-> |---|---|
-> | `LIVE` | `https://api.squarescreen.io/api/v1` |
-> | `TEST` | `https://testapi.squarescreen.io/api/v1` |
->
-> Integrators do not set the base URL — it is an internal SDK concern.
+| `environment` value | Base URL |
+|---|---|
+| `SquareScreenEnvironment.LIVE` (default) | `https://api.squarescreen.io/api/v1` |
+| `SquareScreenEnvironment.TEST` | `https://testapi.squarescreen.io/api/v1` |
+
+Pass the same environment to the pairing calls so they hit the same API before `init()` is called (see [Device pairing](#device-pairing)).
 
 ---
 

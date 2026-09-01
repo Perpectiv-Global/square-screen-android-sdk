@@ -17,6 +17,7 @@ internal data class ActivateRequestDto(
 @Serializable
 internal data class ActivateResponseDto(
     val status: String,
+    @SerialName("device_id") val deviceId: String,
     @SerialName("device_token") val deviceToken: String,
     val message: String? = null
 )

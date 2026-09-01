@@ -88,11 +88,11 @@ fun PairingScreen(onPaired: (DeviceCredentials) -> Unit) {
     }
 
     val startRegisterSession = {
-        registerSessionState.value = SquareScreenPairing.create(context, androidId, SquareScreenDebugLogger())
+        registerSessionState.value = SquareScreenPairing.create(context = context, osIdentifier = androidId, logger = SquareScreenDebugLogger())
     }
 
     val restartRegisterSession = {
-        registerSessionState.value = SquareScreenPairing.create(context, androidId, SquareScreenDebugLogger())
+        registerSessionState.value = SquareScreenPairing.create(context = context, osIdentifier = androidId, logger = SquareScreenDebugLogger())
     }
 
     // Activate path — session created when user submits a device ID.

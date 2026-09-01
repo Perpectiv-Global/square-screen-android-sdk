@@ -6,13 +6,11 @@ import io.squarescreen.core.logging.SquareScreenLogger
 /**
  * Immutable configuration passed to [io.squarescreen.player.SquareScreen.init].
  *
- * The API base URL is set automatically per build type (staging for debug builds,
- * production for release builds) and is not an integrator concern.
- *
  * @param deviceId Unique identifier for this device. Injected as `X-Device-Id`.
  * @param deviceToken Auth token for this device. Injected as `X-Device-Token`.
  *   **Security:** Do not hardcode this value. Store it in `EncryptedSharedPreferences`
  *   and retrieve it after the device pairing flow.
+ * @param environment Which API environment to connect to. Defaults to [SquareScreenEnvironment.LIVE].
  * @param heartbeatIntervalSeconds How often (in seconds) to post a heartbeat.
  *   Minimum 30, default 60.
  * @param emergencyPollIntervalSeconds How often (in seconds) to poll for emergency alerts.
@@ -27,6 +25,7 @@ import io.squarescreen.core.logging.SquareScreenLogger
 data class SquareScreenConfig(
     val deviceId: String,
     val deviceToken: String,
+    val environment: SquareScreenEnvironment = SquareScreenEnvironment.LIVE,
     val heartbeatIntervalSeconds: Long = 60L,
     val emergencyPollIntervalSeconds: Long = 30L,
     val cacheTtlSeconds: Long = 3600L,

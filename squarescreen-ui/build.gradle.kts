@@ -42,6 +42,8 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
+    implementation(libs.media3.datasource)
+    implementation(libs.media3.database)
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)

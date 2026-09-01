@@ -30,10 +30,10 @@ public final class io/squarescreen/player/SquareScreenPairing {
 }
 
 public final class io/squarescreen/player/SquareScreenPairing$Companion {
-	public final fun create (Landroid/content/Context;Ljava/lang/String;Lio/squarescreen/core/logging/SquareScreenLogger;)Lio/squarescreen/player/SquareScreenPairing;
-	public static synthetic fun create$default (Lio/squarescreen/player/SquareScreenPairing$Companion;Landroid/content/Context;Ljava/lang/String;Lio/squarescreen/core/logging/SquareScreenLogger;ILjava/lang/Object;)Lio/squarescreen/player/SquareScreenPairing;
-	public final fun createWithActivation (Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Lio/squarescreen/core/logging/SquareScreenLogger;)Lio/squarescreen/player/SquareScreenPairing;
-	public static synthetic fun createWithActivation$default (Lio/squarescreen/player/SquareScreenPairing$Companion;Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Lio/squarescreen/core/logging/SquareScreenLogger;ILjava/lang/Object;)Lio/squarescreen/player/SquareScreenPairing;
+	public final fun create (Landroid/content/Context;Ljava/lang/String;Lio/squarescreen/core/config/SquareScreenEnvironment;Lio/squarescreen/core/logging/SquareScreenLogger;)Lio/squarescreen/player/SquareScreenPairing;
+	public static synthetic fun create$default (Lio/squarescreen/player/SquareScreenPairing$Companion;Landroid/content/Context;Ljava/lang/String;Lio/squarescreen/core/config/SquareScreenEnvironment;Lio/squarescreen/core/logging/SquareScreenLogger;ILjava/lang/Object;)Lio/squarescreen/player/SquareScreenPairing;
+	public final fun createWithActivation (Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Lio/squarescreen/core/config/SquareScreenEnvironment;Lio/squarescreen/core/logging/SquareScreenLogger;)Lio/squarescreen/player/SquareScreenPairing;
+	public static synthetic fun createWithActivation$default (Lio/squarescreen/player/SquareScreenPairing$Companion;Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Lio/squarescreen/core/config/SquareScreenEnvironment;Lio/squarescreen/core/logging/SquareScreenLogger;ILjava/lang/Object;)Lio/squarescreen/player/SquareScreenPairing;
 }
 
 public final class io/squarescreen/player/service/SquareScreenPlayerService : android/app/Service {

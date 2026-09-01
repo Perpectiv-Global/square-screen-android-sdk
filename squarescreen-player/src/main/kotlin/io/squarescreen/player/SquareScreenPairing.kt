@@ -1,6 +1,7 @@
 package io.squarescreen.player
 
 import android.content.Context
+import io.squarescreen.core.config.SquareScreenEnvironment
 import io.squarescreen.core.logging.SquareScreenLogger
 import io.squarescreen.core.model.PairingStatus
 import io.squarescreen.core.result.SquareScreenError
@@ -238,12 +239,13 @@ class SquareScreenPairing private constructor(
         fun create(
             context: Context,
             osIdentifier: String,
+            environment: SquareScreenEnvironment = SquareScreenEnvironment.LIVE,
             logger: SquareScreenLogger? = null
         ): SquareScreenPairing {
             require(osIdentifier.isNotBlank()) { "osIdentifier must not be blank" }
             return SquareScreenPairing(
                 registrationMode = RegistrationMode.Register(osIdentifier),
-                networkClient = PairingNetworkClient(),
+                networkClient = PairingNetworkClient(environment),
                 tokenStore = PairingTokenStore(context.applicationContext),
                 logger = logger
             )
@@ -265,13 +267,14 @@ class SquareScreenPairing private constructor(
             context: Context,
             deviceId: String,
             deviceToken: String,
+            environment: SquareScreenEnvironment = SquareScreenEnvironment.LIVE,
             logger: SquareScreenLogger? = null
         ): SquareScreenPairing {
             require(deviceId.isNotBlank()) { "deviceId must not be blank" }
             require(deviceToken.isNotBlank()) { "deviceToken must not be blank" }
             return SquareScreenPairing(
                 registrationMode = RegistrationMode.Activate(deviceId, deviceToken),
-                networkClient = PairingNetworkClient(),
+                networkClient = PairingNetworkClient(environment),
                 tokenStore = PairingTokenStore(context.applicationContext),
                 logger = logger
             )

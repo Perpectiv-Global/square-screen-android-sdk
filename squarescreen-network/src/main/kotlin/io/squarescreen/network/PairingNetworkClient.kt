@@ -1,6 +1,7 @@
 package io.squarescreen.network
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import io.squarescreen.core.config.SquareScreenEnvironment
 import io.squarescreen.core.model.PairingRegistration
 import io.squarescreen.core.model.PairingStatus
 import io.squarescreen.core.result.SquareScreenError
@@ -14,6 +15,7 @@ import io.squarescreen.network.dto.RegisterRequestDto
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
 
@@ -25,7 +27,9 @@ import java.util.concurrent.TimeUnit
  *
  * Not intended for direct use by integrators — use [io.squarescreen.player.SquareScreenPairing].
  */
-class PairingNetworkClient {
+class PairingNetworkClient(
+    environment: SquareScreenEnvironment = SquareScreenEnvironment.LIVE
+) {
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -35,13 +39,14 @@ class PairingNetworkClient {
 
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(DemoBypassInterceptor())
+        .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
     private val api: PairingApiService = Retrofit.Builder()
-        .baseUrl(SquareScreenEnvironment.current.baseUrl.trimEnd('/') + "/")
+        .baseUrl(environment.baseUrl.trimEnd('/') + "/")
         .client(okHttpClient)
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
@@ -105,7 +110,7 @@ class PairingNetworkClient {
                         ?: return PairingStatus.Error(
                             IllegalStateException("Activate response body was null")
                         )
-                    PairingStatus.Approved(deviceId, body.deviceToken)
+                    PairingStatus.Approved(body.deviceId, body.deviceToken)
                 }
                 response.code() == 401 -> PairingStatus.InvalidToken
                 response.code() == 409 -> {

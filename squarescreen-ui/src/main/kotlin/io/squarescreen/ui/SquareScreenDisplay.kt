@@ -39,6 +39,7 @@ import java.util.TimeZone
  * @param modifier Modifier applied to the root container.
  * @param onReportFailed Called when a playback report fails to send. Use this to cache the
  *   report and retry when connectivity is restored.
+ * @param onItemStarted Called when a new playlist item begins playing.
  * @param emptyContent Composable shown when no content is scheduled.
  * @param errorContent Composable shown on a persistent network error with no cache.
  */
@@ -47,6 +48,7 @@ fun SquareScreenDisplay(
     squareScreen: SquareScreen,
     modifier: Modifier = Modifier,
     onReportFailed: ((PlaybackReport) -> Unit)? = null,
+    onItemStarted: ((io.squarescreen.core.model.PlaylistItem) -> Unit)? = null,
     emptyContent: @Composable () -> Unit = {},
     errorContent: @Composable () -> Unit = {}
 ) {
@@ -58,6 +60,7 @@ fun SquareScreenDisplay(
         SquareScreenPlayerView(
             nowPlaying = squareScreen.nowPlaying,
             modifier = Modifier.fillMaxSize(),
+            onItemStarted = onItemStarted,
             onItemCompleted = { item, startedAt, endedAt ->
                 scope.launch {
                     val report = PlaybackReport(
