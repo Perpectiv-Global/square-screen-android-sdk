@@ -7,9 +7,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.view.WindowManager
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.squarescreen.core.model.CommandType
-import io.squarescreen.core.model.DeviceStatus
 import io.squarescreen.core.model.MediaType
 import io.squarescreen.core.model.PlaylistItem
 import io.squarescreen.core.model.toCommandType
@@ -54,7 +49,6 @@ fun PlayerScreen(squareScreen: SquareScreen) {
     val context = LocalContext.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
-    val deviceStatus by squareScreen.deviceStatus.collectAsState(initial = DeviceStatus.CONNECTING)
     val commands by squareScreen.commands.collectAsState(initial = emptyList())
 
     val pendingStore = remember { PendingPlaybackStore(context) }
@@ -135,17 +129,6 @@ fun PlayerScreen(squareScreen: SquareScreen) {
             errorContent = { ErrorPlaceholder() }
         )
 
-        AnimatedVisibility(
-            visible = deviceStatus == DeviceStatus.OFFLINE,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .statusBarsPadding()
-                .padding(start = 12.dp, top = 48.dp)
-        ) {
-            OfflineBadge()
-        }
     }
 }
 

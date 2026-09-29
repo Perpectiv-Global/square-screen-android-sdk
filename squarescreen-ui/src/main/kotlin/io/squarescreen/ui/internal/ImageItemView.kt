@@ -33,7 +33,7 @@ internal fun ImageItemView(
                 .diskCacheKey(stableCacheKey)
                 .build(),
             contentDescription = null,
-            contentScale = ContentScale.Crop,
+            contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxSize(),
             onSuccess = {
                 Log.d("ImageItemView", "Loaded: $stableCacheKey")

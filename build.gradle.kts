@@ -36,6 +36,15 @@ subprojects {
         // the Dokka generation task's actions with a no-op that only creates the
         // expected output directory (empty). javaDocReleaseJar then packages the
         // empty directory into a valid (empty) javadoc jar for Maven Central.
+        // Configure signing signatory using the local GPG keyring.
+        extensions.findByType(org.gradle.plugins.signing.SigningExtension::class.java)?.apply {
+            val keyId = project.findProperty("signing.gnupg.keyName") as String?
+            val passphrase = project.findProperty("signing.gnupg.passphrase") as String?
+            if (keyId != null && passphrase != null) {
+                useGpgCmd()
+            }
+        }
+
         tasks.matching { it.name == "javaDocReleaseGeneration" }.configureEach {
             actions.clear()
             doLast {
