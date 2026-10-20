@@ -88,4 +88,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version = "2.0.21-1.0.27" }
 binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }
-maven-publish = { id = "com.vanniktech.maven.publish", version = "0.29.0" }
+maven-publish = { id = "com.vanniktech.maven.publish", version = "0.30.0" }
