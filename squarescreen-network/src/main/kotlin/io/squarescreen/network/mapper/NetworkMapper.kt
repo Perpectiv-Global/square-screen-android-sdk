@@ -48,14 +48,16 @@ internal object NetworkMapper {
 
     /**
      * Infers [MediaType] from the file extension of [url].
-     * Strips query parameters before checking the extension.
-     * Defaults to [MediaType.IMAGE] for unrecognised extensions.
+     * Query parameters and fragments are stripped from the path before extracting the
+     * extension. Doing this first is critical: presigned URLs (CloudFront, S3) embed dots
+     * inside query values (e.g. Signature=abc.def.xyz), so calling substringAfterLast('.')
+     * on the raw URL picks up the wrong dot and the extension check silently falls through
+     * to IMAGE.
+     * Defaults to [MediaType.IMAGE] for unrecognised or missing extensions.
      */
     private fun inferMediaType(url: String): MediaType {
-        val extension = url.substringAfterLast('.')
-            .lowercase()
-            .substringBefore('?')
-            .substringBefore('#')
+        val path = url.substringBefore('?').substringBefore('#')
+        val extension = path.substringAfterLast('.', missingDelimiterValue = "").lowercase()
         return when (extension) {
             "mp4", "mov", "avi", "mkv", "webm", "m4v", "ts" -> MediaType.VIDEO
             else -> MediaType.IMAGE

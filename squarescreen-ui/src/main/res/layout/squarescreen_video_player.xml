@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PlayerView configured to use TextureView instead of the default SurfaceView.
+  TextureView participates in the Compose render tree, so AnimatedContent fade/slide
+  transitions animate correctly. SurfaceView is composited by the system at a separate
+  layer and ignores alpha, which causes black flashes on every item transition.
+-->
+<androidx.media3.ui.PlayerView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    app:surface_type="texture_view"
+    app:use_controller="false"
+    app:resize_mode="fit" />

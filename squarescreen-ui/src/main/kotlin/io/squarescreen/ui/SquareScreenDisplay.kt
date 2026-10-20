@@ -8,6 +8,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import io.squarescreen.core.model.PlaybackReport
 import io.squarescreen.core.result.SquareScreenResult
 import io.squarescreen.player.SquareScreen
@@ -56,7 +57,7 @@ fun SquareScreenDisplay(
     val nowPlayingResult by squareScreen.nowPlaying.collectAsState(initial = null)
     val currentPlaylist = (nowPlayingResult as? SquareScreenResult.Success)?.data
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize().clipToBounds()) {
         SquareScreenPlayerView(
             nowPlaying = squareScreen.nowPlaying,
             modifier = Modifier.fillMaxSize(),

@@ -1,6 +1,7 @@
 package io.squarescreen.ui.internal
 
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
@@ -26,9 +27,9 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
+import io.squarescreen.ui.R
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -41,7 +42,8 @@ internal fun VideoItemView(
     val context = LocalContext.current
     val onEndedState = rememberUpdatedState(onEnded)
 
-    var isPlaying by remember(url) { mutableStateOf(false) }
+    // True only after the first video frame is rendered — used to gate thumbnail removal.
+    var firstFrameRendered by remember(url) { mutableStateOf(false) }
 
     val cacheDataSourceFactory = remember {
         CacheDataSource.Factory()
@@ -60,8 +62,8 @@ internal fun VideoItemView(
                 prepare()
                 playWhenReady = true
                 addListener(object : Player.Listener {
-                    override fun onIsPlayingChanged(playing: Boolean) {
-                        isPlaying = playing
+                    override fun onRenderedFirstFrame() {
+                        firstFrameRendered = true
                     }
                     override fun onPlaybackStateChanged(state: Int) {
                         if (state == Player.STATE_ENDED) onEndedState.value()
@@ -81,24 +83,27 @@ internal fun VideoItemView(
     Box(modifier = modifier.background(Color.Black)) {
         AndroidView(
             factory = { ctx ->
-                PlayerView(ctx).apply {
-                    player = exoPlayer
-                    useController = false
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-                    setBackgroundColor(android.graphics.Color.BLACK)
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                }
+                // Inflated from XML so surface_type="texture_view" is applied at construction.
+                // The SURFACE_TYPE_* constants are private in Media3 1.4.x with no setter, so
+                // XML inflation is the only way to configure this.
+                (LayoutInflater.from(ctx)
+                    .inflate(R.layout.squarescreen_video_player, null) as PlayerView)
+                    .apply {
+                        player = exoPlayer
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                    }
             },
             update = { playerView -> playerView.player = exoPlayer },
             modifier = Modifier.fillMaxSize()
         )
 
-        // Show thumbnail while video is buffering. Fades out automatically
-        // once ExoPlayer starts rendering frames.
-        if (!isPlaying && thumbnailUrl != null) {
+        // Show thumbnail until the first frame is rendered. onRenderedFirstFrame fires
+        // only once the pixel actually lands on the surface — earlier than that the
+        // surface is still black even though ExoPlayer reports STATE_READY.
+        if (!firstFrameRendered && thumbnailUrl != null) {
             AsyncImage(
                 model = thumbnailUrl,
                 contentDescription = null,

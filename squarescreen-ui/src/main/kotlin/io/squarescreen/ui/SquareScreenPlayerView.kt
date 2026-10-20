@@ -16,6 +16,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import io.squarescreen.core.annotation.ExperimentalSquareScreenApi
 import io.squarescreen.core.model.MediaType
@@ -143,7 +144,7 @@ private fun PlaylistRenderer(
         targetState = stableCurrentItem,
         transitionSpec = { transitionSpecFor(effectiveTransition) },
         label = "playlist_item_transition",
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize().clipToBounds()
     ) { item ->
         MediaItemView(
             item = item,
